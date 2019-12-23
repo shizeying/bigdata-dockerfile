@@ -1,10 +1,15 @@
 #!/bin/bash
 export ZOOKEEPER_HOME=/app/zookeeper
-export PATH=${PATH}${ZOOKEEPER_HOME}/bin
+export HADOOP_HOME=/app/hadoop
+export HBASE_HOME=/app/hbase
+export KAFKA_HOME=/app/kafka
+export FLINK_HOME=/app/flink
+export PATH=${PATH}:${HADOOP_HOME}/bin:${HADOOP_HOME}/sbin:${HBASE_HOME}/bin:${FLINK_HOME}/bin:${KAFKA_HOME}/bin:${ZOOKEEPER_HOME}/bin
 Green="\033[32m"
 Red="\033[31m"
 Yellow="\033[33m"
 RedBG="\033[41;37m"
+GreenBG="\033[42;37m"
 Font="\033[0m"
 OK="${Green}[OK]${Font}"
 Error="${Red}[错误]${Font}"
@@ -21,49 +26,64 @@ nms=$(ps -ef | grep nodemanager | grep -v grep | grep -v kill | awk '{print $2}'
 hss=$(ps -ef | grep historyserver | grep -v grep | grep -v kill | awk '{print $2}')
 hrss=$(ps -ef | grep HRegionServer | grep -v grep | grep -v kill | awk '{print $2}')
 hms=$(ps -ef | grep HMaster | grep -v grep | grep -v kill | awk '{print $2}')
-
+ssces=$(ps -ef | grep StandaloneSessionClusterEntrypoint | grep -v grep | grep -v kill | awk '{print $2}')
 
 function stop_pid() {
   echo -e "${OK} ${Yellow} 开始检测并关闭未关闭的pid ${Font}"
   # shellcheck disable=SC2154
   if [[ -n "${qps}" ]]; then
-    kill -9 "${qps}"
+    zkServer.sh stop
+    qps2=$(ps -ef | grep QuorumPeerMain | grep -v grep | grep -v kill | awk '{print $2}')
+    if [[ -n "${qps2}" ]]; then
+      kill -s 9 ${qps2}
+    fi
   fi
   if [[ -n "${ks}" ]]; then
     # shellcheck disable=SC2086
-    kill -9 ${ks}
+    /app/kafka/bin/kafka-server-stop.sh
+    ks2=$(ps -ef | grep kafka | grep -v grep | grep -v kill | awk '{print $2}')
+    if [[ -n "${ks2}" ]]; then
+      kill -s 9 "${ks2}"
+    fi
   fi
   if [[ -n "${ns}" ]]; then
     # shellcheck disable=SC2086
-    kill -9 ${ns}
+    kill -s 9 ${ns}
   fi
   if [[ -n "${ds}" ]]; then
-    kill -9 "${ds}"
+    kill -s 9 "${ds}"
   fi
   if [[ -n "${rs}" ]]; then
-    kill -9 "${rs}"
+    kill -s 9 "${rs}"
   fi
   if [[ -n "${nms}" ]]; then
-    kill -9 "${nms}"
+    kill -s 9 "${nms}"
   fi
   if [[ -n "${hss}" ]]; then
     # shellcheck disable=SC2086
-    kill -9 ${hss}
+    kill -s 9 ${hss}
   fi
 
   if [[ -n "${hrss}" ]]; then
     # shellcheck disable=SC2086
     # shellcheck disable=SC2154
-    kill -9 ${hrss}
+
+    kill -s 9 ${hrss}
   fi
   if [[ -n "${hms}" ]]; then
     # shellcheck disable=SC2086
-    kill -9 ${hms}
+    kill -s 9 ${hms}
+    exit 3
   fi
   # shellcheck disable=SC2154
   if [[ -n "${ssces}" ]]; then
-    kill -9 "${ssces}"
+    /app/flink/bin/stop-cluster.sh
+    ssces2=$(ps -ef | grep StandaloneSessionClusterEntrypoint | grep -v grep | grep -v kill | awk '{print $2}')
+    if [[ -n "${ssces2}" ]]; then
+      kill -s 9 "${ssces2}"
+    fi
   fi
+  rm -rf /tmp/*
 }
 function start_kafka_zookeeper() {
   quorumpeermain=$( (ps -ef | grep QuorumPeerMain | grep -v "grep" | wc -l))
@@ -72,17 +92,49 @@ function start_kafka_zookeeper() {
     zkServer.sh start
     echo -e "${OK} ${Yellow} 开始启动kafka ${Font}"
     /app/kafka/bin/kafka-server-start.sh /app/kafka/config/server.properties 1>/app/kafka/logs/kafka-server.log 2>&1 &
+    kafka=$( (ps -ef | grep kafka | grep -v "grep" | wc -l))
+    if [ "${kafka}" -eq 0 ]; then
+      echo -e "${Error} ${RedBG} 启动失败 ${Font}"
+      exit 0
+    fi
   else
     echo -e "${Error} ${RedBG} 启动失败 ${Font}"
     exit 5
   fi
   quorumpeermainStart=$( (ps -ef | grep QuorumPeerMain | grep -v "grep" | wc -l))
-  kafka=$( (ps -ef | grep kafka | grep -v "grep" | wc -l))
-  sum=$((sum + quorumpeermainStart + kafka))
+  sum=$((sum + quorumpeermainStart))
 }
 function is_start_bigdata() {
-  if [ "${sum}" -eq 2 ]; then
+  echo -e "${OK} ${Yellow} 开始启动bigdata ${Font}"
+  if [ "${sum}" -eq 1 ]; then
     su - root -c "/usr/local/bin/bootstrap.sh -d"
+  fi
+}
+function is_flink() {
+  namenode=$(ps -ef | grep namenode | grep -v "grep" | wc -l)
+  datanode=$(ps -ef | grep datanode | grep -v "grep" | wc -l)
+  resourcemanager=$(ps -ef | grep resourcemanager | grep -v "grep" | wc -l)
+  nodemanager=$(ps -ef | grep nodemanager | grep -v "grep" | wc -l)
+  historyserver=$(ps -ef | grep historyserver | grep -v "grep" | wc -l)
+  sum=$((sum + namenode + datanode + resourcemanager + nodemanager + historyserver))
+  if [ "${sum}" -eq 6 ]; then
+    echo -e "${OK} ${Yellow} 开始启动flink ${Font}"
+    start-cluster.sh
+  else
+    echo -e "${Error} ${RedBG} 启动flink失败 ${Font}"
+    exit 6
+  fi
+
+}
+function is_success() {
+  # shellcheck disable=SC2009
+  flink=$( (ps -ef | grep StandaloneSessionClusterEntrypoint | grep -v "grep" | wc -l))
+  hregionserver=$( (ps -ef | grep HRegionServer | grep -v "grep" | wc -l))
+  hmaster=$( (ps -ef | grep HMaster | grep -v "grep" | wc -l))
+  sum=$((sum + flink + hregionserver + hmaster))
+  if [ "${sum}" -eq 9 ]; then
+    echo -e "${OK} ${GreenBG} 启动完毕 ${Font}"
+    while true; do sleep 1000; done
   fi
 }
 function main() {
@@ -90,6 +142,8 @@ function main() {
   stop_pid
   start_kafka_zookeeper
   is_start_bigdata
+  is_flink
+  is_success
 }
 
 main

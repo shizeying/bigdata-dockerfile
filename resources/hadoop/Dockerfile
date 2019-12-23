@@ -12,10 +12,14 @@ RUN mkdir -p hadoop hbase zookeeper
 
 ADD ssh_config /root/.ssh/config
 ##hadoop
-RUN wget https://archive.cloudera.com/cdh5/cdh/5/hadoop-2.6.0-cdh5.14.2.tar.gz
-RUN tar zxvf hadoop-2.6.0-cdh5.14.2.tar.gz  -strip-components=1  -C  /app/hadoop
-#ADD hadoop.tar.gz   /app/
-RUN mv /app/hadoop-2.6.0-cdh5.14.2 /app/hadoop
+#RUN wget -O hadoop.tar.gz https://archive.cloudera.com/cdh5/cdh/5/hadoop-2.6.0-cdh5.14.2.tar.gz
+#RUN tar zxvf hadoop-2.6.0-cdh5.14.2.tar.gz  -strip-components=1  -C  /app/hadoop
+#ADD hadoop.tar.gz /app/
+
+COPY hadoop.tar.gz   /app/
+RUN mkdir -p /app/hadoop
+RUN tar zxf /app/hadoop.tar.gz  --strip-components=1  -C  /app/hadoop && \
+	rm -rf /app/hadoop.tar.gz
 ENV HADOOP_HOME /app/hadoop
 ENV HADOOP_PREFIX /app/hadoop
 ENV HADOOP_COMMON_HOME /app/hadoop
@@ -45,9 +49,9 @@ RUN mkdir -p /app/zookeeper/data  && \
 ENV ZOOKEEPER_HOME /app/zookeeper
 
 ##hbase
-RUN wget https://archive.cloudera.com/cdh5/cdh/5/hbase-1.2.0-cdh5.14.2.tar.gz
-RUN  tar xvf hbase-1.2.0-cdh5.14.2.tar.gz  -strip-components 1  -C  /app/hbase
-#ADD hbase.tar.gz /app/
+#RUN wget https://archive.cloudera.com/cdh5/cdh/5/hbase-1.2.0-cdh5.14.2.tar.gz
+#RUN  tar xvf hbase-1.2.0-cdh5.14.2.tar.gz  -strip-components 1  -C  /app/hbase
+ADD hbase.tar.gz /app/
 ADD etc/hbase/hbase-site.xml /app/hbase/conf/hbase-site.xml
 ADD etc/hbase/hbase-env.sh  /app/hbase/conf/hbase-env.sh
 ENV HBASE_HOME  /app/hbase
