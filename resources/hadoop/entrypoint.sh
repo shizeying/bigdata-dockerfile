@@ -85,21 +85,11 @@ function stop_pid() {
   fi
   rm -rf /tmp/*
 }
-function start_kafka_zookeeper() {
+function start_zookeeper() {
   quorumpeermain=$( (ps -ef | grep QuorumPeerMain | grep -v "grep" | wc -l))
   if [ "${quorumpeermain}" -eq 0 ]; then
     echo -e "${OK} ${Yellow} 开始启动zookeeper ${Font}"
     zkServer.sh start
-    until zkServer.sh status; do
-      sleep 0.1
-    done
-    echo -e "${OK} ${Yellow} 开始启动kafka ${Font}"
-    is_kafka
-    kafka=$( (ps -ef | grep kafka | grep -v "grep" | wc -l))
-    if [ "${kafka}" -eq 0 ]; then
-      echo -e "${Error} ${RedBG} 启动失败 ${Font}"
-      exit 0
-    fi
   else
     echo -e "${Error} ${RedBG} 启动失败 ${Font}"
     exit 5
@@ -108,8 +98,11 @@ function start_kafka_zookeeper() {
   sum=$((sum + quorumpeermainStart))
 }
 is_kafka() {
+  echo -e "${OK} ${Yellow} 开始启动kafka ${Font}"
+  ##放置zookeeper中存在broker_id导致kafka启动失败
+  mkdir -p /app/zookeeper/rm
+  echo "rmr /brokers/ids" | zkCli.sh >/app/zookeeper/rm/zkCli.log 2>&1 &
   # Set the external host and port
-  echo "----------->${ADVERTISED_HOST}"
   if [ ! -z "$ADVERTISED_HOST" ]; then
     echo "advertised host: $ADVERTISED_HOST"
     if grep -q "^advertised.host.name" $KAFKA_HOME/config/server.properties; then
@@ -118,7 +111,6 @@ is_kafka() {
       echo "advertised.host.name=$ADVERTISED_HOST" >>$KAFKA_HOME/config/server.properties
     fi
   fi
-    echo "----------->${ADVERTISED_PORT}"
   if [ ! -z "$ADVERTISED_PORT" ]; then
     echo "advertised port: $ADVERTISED_PORT"
     if grep -q "^advertised.port" $KAFKA_HOME/config/server.properties; then
@@ -127,6 +119,9 @@ is_kafka() {
       echo "advertised.port=$ADVERTISED_PORT" >>$KAFKA_HOME/config/server.properties
     fi
   fi
+  until zkServer.sh status; do
+    sleep 0.1
+  done
   # Allow specification of log retention policies
   if [ ! -z "$LOG_RETENTION_HOURS" ]; then
     echo "log retention hours: $LOG_RETENTION_HOURS"
@@ -148,6 +143,11 @@ is_kafka() {
     echo "auto.create.topics.enable=$AUTO_CREATE_TOPICS" >>$KAFKA_HOME/config/server.properties
   fi
   /app/kafka/bin/kafka-server-start.sh /app/kafka/config/server.properties 1>/app/kafka/logs/kafka-server.log 2>&1 &
+  kafka=$( (ps -ef | grep kafka | grep -v "grep" | wc -l))
+  if [ "${kafka}" -eq 0 ]; then
+    echo -e "${Error} ${RedBG} 启动kafka失败 ${Font}"
+    exit 0
+  fi
 }
 function is_start_bigdata() {
   echo -e "${OK} ${Yellow} 开始启动bigdata ${Font}"
@@ -185,7 +185,8 @@ function is_success() {
 function main() {
   echo -e "${OK} ${Yellow} 开始启动 ${Font}"
   stop_pid
-  start_kafka_zookeeper
+  start_zookeeper
+  is_kafka
   is_start_bigdata
   is_flink
   is_success

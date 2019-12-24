@@ -95,34 +95,11 @@ is_hbase() {
     exit 6
   fi
 }
-is_flink() {
-  hregionserver=$( (ps -ef | grep HRegionServer | grep -v "grep" | wc -l))
-  hmaster=$( (ps -ef | grep HMaster | grep -v "grep" | wc -l))
-  count=$((count + hregionserver + hmaster))
-  if [ "${count}" -eq 8 ]; then
-    echo -e "${OK} ${Yellow} 开始启动flink ${Font}"
-    start-cluster.sh
-  else
-    echo -e "${Error} ${RedBG} 启动flink失败 ${Font}"
-    exit 6
-  fi
-}
-is_success() {
-  flink=$( (ps -ef | grep StandaloneSessionClusterEntrypoint | grep -v "grep" | wc -l))
-  kafka=$( (ps -ef | grep kafka | grep -v "grep" | wc -l))
-  count=$((count + kafka + flink))
-  if [ "${count}" -eq 10 ]; then
-    echo -e "${OK} ${GreenBG} 启动完毕 ${Font}"
-    while true; do sleep 1000; done
-  fi
-}
 
 main() {
   is_root
   is_hadoop
   is_hbase
-#  is_flink
-#  is_success
 }
 list() {
   case $1 in
