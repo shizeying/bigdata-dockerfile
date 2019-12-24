@@ -45,7 +45,16 @@ docker build -t jdk-scala .
 ## hadoop
 
 ```dockerfile
-docker build -t hadoop . && docker run -p 50070:50070 -p 60010:60010 -p 8081:8081 -p 2181:2181 -p 19888:19888 -p 8020:8020 -p 9092:9092 -p 9093:9093 -p 9001:9000 -p 8088:8088 --name hadoop -h hadoop   hadoop 
+docker build -t hadoop .
+&& docker run
+-p 50070:50070 -p 60010:60010 -p 8081:8081 -p 2181:2181 -p 19888:19888 -p 8020:8020 -p 9092:9092 -p 9093:9093 -p 9001:9000 -p 8088:8088 -p 16201:16201 -p 16301:16301 \
+--name hadoop \
+-h hadoop \
+-e ADVERTISED_HOST=127.0.0.1 -e ADVERTISED_PORT=9092 \
+--restart always \
+--network bigdata \
+--ip 172.22.16.3 \
+hadoop 
 ```
 
 切记:hostname必须指定为hadoop,此种方式搭建的为单节点
