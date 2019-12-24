@@ -67,6 +67,7 @@ ENV FLINK_HOME /app/flink
 ADD kafka.tar.gz /app
 ADD etc/kafka/server.properties /app/kafka/config/server.properties
 ENV KAFKA_HOME /app/kafka
+ENV KAFKA_VERSION=2.11-1.0.2-cdh5.14.2
 RUN chmod +x ${KAFKA_HOME}/bin/*.sh
 RUN mkdir -p /app/kafka/logs
 RUN touch /app/kafka/logs/kafka-server.log
@@ -82,14 +83,14 @@ RUN hdfs namenode -format
 HEALTHCHECK --interval=60s --timeout=5s CMD /usr/local/bin/bootstrap.sh
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-
+#CMD ["/usr/local/bin/start-kafkak.sh" ]
 #CMD ["bash"]
 # hadoop
 EXPOSE 8088 50070 9000 19888 8020 8033 8031 8032  8042  50090   50010  50020
 ## zoo
 EXPOSE 2181
 ##hbase
-EXPOSE 60010
+EXPOSE 60010 16301  16201
 ##flink
 EXPOSE 9999  6123 8081
 WORKDIR /app/

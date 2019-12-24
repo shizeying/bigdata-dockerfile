@@ -90,8 +90,11 @@ function start_kafka_zookeeper() {
   if [ "${quorumpeermain}" -eq 0 ]; then
     echo -e "${OK} ${Yellow} 开始启动zookeeper ${Font}"
     zkServer.sh start
+    until zkServer.sh status; do
+      sleep 0.1
+    done
     echo -e "${OK} ${Yellow} 开始启动kafka ${Font}"
-    /app/kafka/bin/kafka-server-start.sh /app/kafka/config/server.properties 1>/app/kafka/logs/kafka-server.log 2>&1 &
+    is_kafka
     kafka=$( (ps -ef | grep kafka | grep -v "grep" | wc -l))
     if [ "${kafka}" -eq 0 ]; then
       echo -e "${Error} ${RedBG} 启动失败 ${Font}"
@@ -103,6 +106,48 @@ function start_kafka_zookeeper() {
   fi
   quorumpeermainStart=$( (ps -ef | grep QuorumPeerMain | grep -v "grep" | wc -l))
   sum=$((sum + quorumpeermainStart))
+}
+is_kafka() {
+  # Set the external host and port
+  echo "----------->${ADVERTISED_HOST}"
+  if [ ! -z "$ADVERTISED_HOST" ]; then
+    echo "advertised host: $ADVERTISED_HOST"
+    if grep -q "^advertised.host.name" $KAFKA_HOME/config/server.properties; then
+      sed -r -i "s/#(advertised.host.name)=(.*)/\1=$ADVERTISED_HOST/g" $KAFKA_HOME/config/server.properties
+    else
+      echo "advertised.host.name=$ADVERTISED_HOST" >>$KAFKA_HOME/config/server.properties
+    fi
+  fi
+    echo "----------->${ADVERTISED_PORT}"
+  if [ ! -z "$ADVERTISED_PORT" ]; then
+    echo "advertised port: $ADVERTISED_PORT"
+    if grep -q "^advertised.port" $KAFKA_HOME/config/server.properties; then
+      sed -r -i "s/#(advertised.port)=(.*)/\1=$ADVERTISED_PORT/g" $KAFKA_HOME/config/server.properties
+    else
+      echo "advertised.port=$ADVERTISED_PORT" >>$KAFKA_HOME/config/server.properties
+    fi
+  fi
+  # Allow specification of log retention policies
+  if [ ! -z "$LOG_RETENTION_HOURS" ]; then
+    echo "log retention hours: $LOG_RETENTION_HOURS"
+    sed -r -i "s/(log.retention.hours)=(.*)/\1=$LOG_RETENTION_HOURS/g" $KAFKA_HOME/config/server.properties
+  fi
+  if [ ! -z "$LOG_RETENTION_BYTES" ]; then
+    echo "log retention bytes: $LOG_RETENTION_BYTES"
+    sed -r -i "s/#(log.retention.bytes)=(.*)/\1=$LOG_RETENTION_BYTES/g" $KAFKA_HOME/config/server.properties
+  fi
+
+  # Configure the default number of log partitions per topic
+  if [ ! -z "$NUM_PARTITIONS" ]; then
+    echo "default number of partition: $NUM_PARTITIONS"
+    sed -r -i "s/(num.partitions)=(.*)/\1=$NUM_PARTITIONS/g" $KAFKA_HOME/config/server.properties
+  fi
+  # Enable/disable auto creation of topics
+  if [ ! -z "$AUTO_CREATE_TOPICS" ]; then
+    echo "auto.create.topics.enable: $AUTO_CREATE_TOPICS"
+    echo "auto.create.topics.enable=$AUTO_CREATE_TOPICS" >>$KAFKA_HOME/config/server.properties
+  fi
+  /app/kafka/bin/kafka-server-start.sh /app/kafka/config/server.properties 1>/app/kafka/logs/kafka-server.log 2>&1 &
 }
 function is_start_bigdata() {
   echo -e "${OK} ${Yellow} 开始启动bigdata ${Font}"
