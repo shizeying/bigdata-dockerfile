@@ -25,11 +25,11 @@
 	<!--    该参数制定了HReion服务器的位置，即数据存放的位置。主要端口号要和Hadoop相应配置一致-->
 	<property>
 		<name>hbase.rootdir</name>
-		<value>hdfs://hadoop:9000/hbase</value>
+		<value>hdfs://localhost:9000/hbase</value>
 	</property>
 	<property>
 		<name>hbase.zookeeper.quorum</name>
-		<value>hadoop</value>
+		<value>localhost</value>
 	</property>
 	<property>
 		<name>hbase.zookeeper.property.clientPort</name>
@@ -39,8 +39,9 @@
 	<property>
 		<name>hbase.cluster.distributed</name>
 		<value>true</value>
-	
 	</property>
+
+	
 	<property>
 		<name>dfs.replication</name>
 		<value>1</value>

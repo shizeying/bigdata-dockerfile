@@ -90,9 +90,19 @@ is_hbase() {
   if [ "${count}" -eq 6 ]; then
     echo -e "${OK} ${RedBG} 开始启动hbase ${Font}"
     start-hbase.sh
+    hbase-daemon.sh start rest
+    hbase-daemon.sh start thrift
   else
     echo -e "${Error} ${RedBG} 启动quorumpeermain未启动 ${Font}"
     exit 6
+  fi
+  restserver=$(ps -ef | grep RESTServer | grep -v "grep" | wc -l)
+  ts=$(ps -ef | grep ThriftServer | grep -v "grep" | wc -l)
+  hregionserver=$( (ps -ef | grep HRegionServer | grep -v "grep" | wc -l))
+  hmaster=$( (ps -ef | grep HMaster | grep -v "grep" | wc -l))
+  count=$((count + restserver + ts + hregionserver + hmaster))
+  if [ "${count}" -ne 10 ]; then
+    exit 10
   fi
 }
 

@@ -26,6 +26,8 @@ nms=$(ps -ef | grep nodemanager | grep -v grep | grep -v kill | awk '{print $2}'
 hss=$(ps -ef | grep historyserver | grep -v grep | grep -v kill | awk '{print $2}')
 hrss=$(ps -ef | grep HRegionServer | grep -v grep | grep -v kill | awk '{print $2}')
 hms=$(ps -ef | grep HMaster | grep -v grep | grep -v kill | awk '{print $2}')
+rss=$(ps -ef | grep RESTServer | grep -v grep | grep -v kill | awk '{print $2}')
+tss=$(ps -ef | grep ThriftServer | grep -v grep | grep -v kill | awk '{print $2}')
 ssces=$(ps -ef | grep StandaloneSessionClusterEntrypoint | grep -v grep | grep -v kill | awk '{print $2}')
 
 function stop_pid() {
@@ -74,6 +76,18 @@ function stop_pid() {
     # shellcheck disable=SC2086
     kill -s 9 ${hms}
     exit 3
+  fi
+  if [[ -n "${hss}" ]]; then
+    # shellcheck disable=SC2086
+    kill -s 9 ${hss}
+  fi
+  if [[ -n "${rss}" ]]; then
+    # shellcheck disable=SC2086
+    kill -s 9 ${rss}
+  fi
+  if [[ -n "${tss}" ]]; then
+    # shellcheck disable=SC2086
+    kill -s 9 ${tss}
   fi
   # shellcheck disable=SC2154
   if [[ -n "${ssces}" ]]; then

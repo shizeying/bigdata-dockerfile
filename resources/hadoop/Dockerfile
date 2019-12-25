@@ -54,6 +54,7 @@ ENV ZOOKEEPER_HOME /app/zookeeper
 ADD hbase.tar.gz /app/
 ADD etc/hbase/hbase-site.xml /app/hbase/conf/hbase-site.xml
 ADD etc/hbase/hbase-env.sh  /app/hbase/conf/hbase-env.sh
+ADD etc/hbase/regionservers /app/hbase/conf/regionservers
 ENV HBASE_HOME  /app/hbase
 
 #flink
@@ -71,7 +72,6 @@ ENV KAFKA_VERSION=2.11-1.0.2-cdh5.14.2
 RUN chmod +x ${KAFKA_HOME}/bin/*.sh
 RUN mkdir -p /app/kafka/logs
 RUN touch /app/kafka/logs/kafka-server.log
-
 #path配置
 ENV PATH ${PATH}:${HADOOP_HOME}/bin:${HADOOP_HOME}/sbin:${ZOOKEEPER_HOME}/bin:${HBASE_HOME}/bin:${FLINK_HOME}/bin:${KAFKA_HOME}/bin
 ## format hdfs, add libraries to hdfs, set up hive metastore
@@ -89,8 +89,10 @@ ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 EXPOSE 8088 50070 9000 19888 8020 8033 8031 8032  8042  50090   50010  50020
 ## zoo
 EXPOSE 2181
+#kafk
+EXPOSE 9092
 ##hbase
-EXPOSE 60010 16301  16201
+EXPOSE 60010 8080 8085 9090 9095  16201 16301
 ##flink
-EXPOSE 9999  6123 8081
+EXPOSE   6123 8081
 WORKDIR /app/
