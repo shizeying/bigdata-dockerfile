@@ -1,0 +1,217 @@
+version: '3.7'
+services:
+
+  #mongodb
+  mongodb:
+    image: mongo
+    #    restart: always
+    #    privileged: true
+    container_name: mongodb
+    restart: always
+
+    ports:
+      - 27017:27017
+    volumes:
+      - ./data/mongodb:/data/db
+      - ./config/mongo/mongod.conf.orig:/etc/mongod.conf.orig
+    environment:
+      TZ: Asia/Shanghai
+      LANG: C.UTF-8
+  zookeeper:
+    #    restart: always
+    image: log-stream_zookeeper
+    ports:
+      - '2181:2181'
+      - '2888:2888'
+      - '3888:3888'
+    container_name: zookeeper
+    environment:
+      TZ: Asia/Shanghai
+      LANG: C.UTF-8
+    #    restart: always
+    networks:
+      - log-stream
+  #        ipv4_address: 192.168.56.133
+  kafka:
+    #    restart: always
+    image: log-stream_kafka
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    extra_hosts:
+      - "mac.local:127.0.0.1"
+    networks:
+      - log-stream
+    #        ipv4_address: 192.168.56.134
+    environment:
+      KAFKA_BROKER_NO: 1
+      #      KAFKA_ADVERTISED_HOST_NAME: mac.local
+      KAFKA_ADVERTISED_HOST_NAME: 192.168.56.9
+      #      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://mac.local:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://192.168.56.9:9092
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_HEAP_OPTS: "-Xmx512M -Xms16M"
+      TZ: Asia/Shanghai
+      LANG: C.UTF-8
+  #    restart: always
+  #  elk部署
+  elasticsearch:
+    #    restart: always
+    image: log-stream_elasticsearch
+    hostname: elasticsearch
+    container_name: elasticsearch
+    privileged: true
+    ports:
+      - 9200:9200
+      - 9300:9300
+    volumes:
+      - ./config/elasticsearch/java.policy:/usr/share/elasticsearch/jdk/conf/security/java.policy
+      - ./config/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+      - ./config/elasticsearch/synonym.dic:/usr/share/elasticsearch/config/synonym/synonym.dic
+      - ./config/elasticsearch/analysis-ik/IKAnalyzer.cfg.xml:/usr/share/elasticsearch/config/analysis-ik/IKAnalyzer.cfg.xml
+      - ./config/elasticsearch/analysis-ik/jdbc-reload.properties:/usr/share/elasticsearch/config/analysis-ik/jdbc-reload.properties
+      - ./data/elasticsearch:/usr/share/elasticsearch/data
+    environment:
+      TZ: Asia/Shanghai
+      LANG: C.UTF-8
+    networks:
+      - log-stream
+  kibana:
+    container_name: kibana
+    hostname: kibana
+    #    restart: always
+    image: kibana:7.9.3
+    #  restart: always
+    privileged: true
+    ports:
+      - 5601:5601
+    depends_on:
+      - elasticsearch
+    links:
+      - elasticsearch
+    volumes:
+      - ./config/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
+      - ./data/kibana:/usr/share/kibana/data
+    environment:
+      - elasticsearch.hosts=http://elasticsearch:9200
+      - TZ=Asia/Shanghai
+    networks:
+      - log-stream
+
+
+  mysql:
+    image: mysql:5.7.25
+    container_name: mysql
+    hostname: mysql
+    #    privileged: true
+    command: [
+        '--default-authentication-plugin=mysql_native_password',
+        '--character-set-server=utf8',
+        '--collation-server=utf8_general_ci',
+        '--default-time-zone=+8:00' # 这句不是重点
+    ]
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: root
+      LANG: C.UTF-8
+    restart: always
+
+    ports:
+      - 3306:3306
+      - 33060:33060
+    volumes:
+      - ./data/mysql/sql:/docker-entrypoint-initdb.d
+      - ./data/mysql/mysql:/var/lib/mysql
+    #    volumes_from:
+    #      - apollo-dbdata
+    networks:
+      - log-stream
+
+
+  #redis容器
+  redis:
+    #定义主机名
+    container_name: redis
+    #使用的镜像
+    image: redis:5.0.2
+    restart: always
+
+    #容器的映射端口
+    ports:
+      - 6379:6379
+    command: redis-server /etc/conf/redis.conf
+    #定义挂载点
+    volumes:
+      - ./data/redis:/data
+      - ./config/redis:/etc/conf
+    #环境变量
+    privileged: true
+    environment:
+      - TZ=Asia/Shanghai
+      - LANG=en_US.UTF-8
+    networks:
+      - log-stream
+  master:
+    image: bde2020/spark-master:2.4.0-hadoop2.8-scala2.12
+    container_name: master
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    environment:
+      - INIT_DAEMON_STEP=setup_spark
+    networks:
+      - log-stream
+  worker1:
+      image: bde2020/spark-worker:2.4.0-hadoop2.8-scala2.12
+      container_name: worker1
+      depends_on:
+        - master
+      ports:
+        - "8081:8081"
+      environment:
+        - "SPARK_MASTER=spark://master:7077"
+        - TZ=Asia/Shanghai
+        - LANG=en_US.UTF-8
+      networks:
+        - log-stream
+
+
+  executor:
+    image: puckel/azkaban-executor
+    container_name: executor
+    environment:
+      - TZ=Asia/Shanghai
+      - LANG=en_US.UTF-8
+    networks:
+      - log-stream
+    volumes:
+      - ./config/azkaban-executor/azkaban.properties:/root/azkaban-executor-2.5.0/conf/azkaban.properties
+    links:
+      - mysql
+
+  webserver:
+    build:
+      context: "./"
+      dockerfile: "dockerfile-azkaban"
+#    restart: always
+    container_name: webserver
+    environment:
+      - TZ=Asia/Shanghai
+      - LANG=en_US.UTF-8
+    ports:
+      - "8444:8443"
+    volumes:
+      - ./config/azkaban-webserver/azkaban.properties:/root/azkaban-web-2.5.0/conf/azkaban.properties
+      - ./config/azkaban-webserver/azkaban-users.xml:/root/azkaban-web-2.5.0/conf/azkaban-users.xml
+    links:
+      - executor:azkaban-executor
+      - mysql
+
+networks:
+  log-stream:
+    driver: bridge
+    ipam:
+      driver: default

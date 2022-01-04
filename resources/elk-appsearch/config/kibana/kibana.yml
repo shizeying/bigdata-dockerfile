@@ -1,0 +1,16 @@
+# 服务端口
+server.port: 5601
+# 服务IP
+server.host: "0.0.0.0"
+# ES
+#elasticsearch.hosts: ["http://es01:9200","http://es02:9200","http://es03:9200"]
+elasticsearch.hosts: [ "http://elasticsearch:9200" ]
+#elasticsearch.username: "elastic"
+#elasticsearch.password: "elastic"
+#enterpriseSearch.host: "http://appsearch:3002"
+# 汉化
+i18n.locale: "zh-CN"
+#xpack.encryptedSavedObjects.encryptionKey: encryptedSavedObjects12345678909876543210
+#xpack.security.encryptionKey: encryptionKeysecurity12345678909876543210
+#xpack.reporting.encryptionKey: encryptionKeyreporting12345678909876543210
+#xpack.task_manager.monitored_stats_health_verbose_log.enabled: true

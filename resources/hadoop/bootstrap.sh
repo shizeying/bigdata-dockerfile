@@ -119,3 +119,20 @@ list() {
   esac
 }
 list $1
+
+
+
+export JAVA_HOME=/usr/java/jdk
+
+export ZOOKEEPER_HOME=/opt/zookeeper
+export SPARK_HOME=/opt/spark
+
+export JAVA_HOME=/opt/jdk
+export SPARK_MASTER_IP=
+export SPARK_WORKER_MEMORY=2g
+export SPARK_WORKER_CORES=2
+export SPARK_EXECUTOR_MEMORY=4g
+export HADOOP_HOME=/opt/hadoop
+export HADOOP_CONF_DIR=/opt/hadoop/etc/hadoop
+export SPARK_MASTER_PORT=7077
+

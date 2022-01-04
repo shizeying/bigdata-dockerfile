@@ -1,0 +1,100 @@
+version: "3.1"
+
+services:
+  #  elk部署
+  elasticsearch:
+    image: elasticsearch:7.9.3
+    restart: always
+    hostname: elasticsearch
+    container_name: elasticsearch
+    privileged: true
+    ports:
+      - 9200:9200
+      - 9300:9300
+    volumes:
+      - ./config/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+      - ./data/elasticsearch:/usr/share/elasticsearch/data
+    environment:
+      TZ: Asia/Shanghai
+      LANG: C.UTF-8
+
+  kibana:
+    container_name: kibana
+    hostname: kibana
+    image: kibana:7.9.3
+    restart: always
+    privileged: true
+    ports:
+      - 5601:5601
+    volumes:
+      - ./config/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
+      - ./data/kibana:/usr/share/kibana/data
+    environment:
+      - elasticsearch.hosts=http://elasticsearch:9200
+      - TZ=Asia/Shanghai
+      - LANG=C.UTF-8
+    depends_on:
+      - elasticsearch
+
+  logstash:
+    container_name: logstash
+    hostname: logstash
+    image: logstash:7.9.3
+
+    restart: always
+    privileged: true
+    volumes:
+      # 映射到容器中
+      - ./config/logstash/GeoLite2-City.mmdb:/usr/share/logstash/config/GeoLite2-City.mmdb
+      - ./config/logstash/logstash-nginx.conf:/usr/share/logstash/config/logstash-nginx.conf
+      - ./config/logstash/logstash.yml:/usr/share/logstash/config/logstash.yml
+      - ./config/logstash/pipelines.yml:/usr/share/logstash/config/pipelines.yml
+      - ./config/logstash/logstash-sample.conf:/usr/share/logstash/config/logstash-sample.conf
+      - ./config/nginx/log/:/log/nginx/
+    environment:
+      - elasticsearch.hosts=http://elasticsearch:9200
+      # 解决logstash监控连接报错
+      - xpack.monitoring.elasticsearch.hosts=http://elasticsearch:9200
+      - TZ=Asia/Shanghai
+      - LANG=C.UTF-8
+    ports:
+      - 5044:5044/tcp
+      - 9600:9600/tcp
+    links:
+      - elasticsearch
+      - kibana
+    depends_on:
+      - elasticsearch
+      - kibana
+  nginx:
+    image: nginx
+    restart: always
+    container_name: nginx
+    privileged: true
+    ports:
+      - 8080:80
+    volumes:
+      - ./config/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./config/nginx/log/:/var/log/nginx
+    environment:
+      TZ: Asia/Shanghai
+      LANG: C.UTF-8
+  grafana:
+    image: grafana/grafana
+    volumes:
+      - ./data/grafana/:/var/lib/grafana
+    container_name: grafana
+    hostname: grafana
+    restart: always
+    environment:
+      - cluster.name=elasticsearch
+    ports:
+      - 3000:3000
+    links:
+      - elasticsearch
+      - kibana
+      - logstash
+    depends_on:
+      - elasticsearch
+      - kibana
+      - logstash

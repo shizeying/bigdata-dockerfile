@@ -1,0 +1,34 @@
+<configuration>
+	<property>
+		<!-- 开启hdfs的web访问接口-->
+		<name>dfs.webhdfs.enabled</name>
+		<value>true</value>
+	</property>
+
+
+	<!-- 使用隔离机制时需要ssh免登陆 -->
+	<!--<property>-->
+	<!--	<name>dfs.ha.fencing.ssh.private-key-files</name>-->
+	<!--	<value>/root/.ssh/id_rsa</value>-->
+	<!--</property>-->
+	
+	<!-- 当前节点为name节点时的元信息存储路径.这个参数设置为多个目录，那么这些目录下都保存着元信息的多个备份 -->
+	<property>
+		<name>dfs.namenode.name.dir</name>
+		<value>file:///opt/hadoop-2.6.0-cdh5.16.1/hdfs/name</value>
+	</property>
+	<!-- 当前节点为data节点时的元信息存储路径.这个参数设置为多个目录，那么这些目录下都保存着数据信息的多个备份 -->
+	<property>
+		<name>dfs.datanode.data.dir</name>
+		<value>file:///opt/hadoop-2.6.0-cdh5.16.1/hdfs/data</value>
+	</property>
+	
+	<property>
+		<name>dfs.replication</name>
+		<value>1</value>
+	</property>
+	<property>
+		<name>dfs.permissions.enabled</name>
+		<value>false</value>
+	</property>
+</configuration>

@@ -1,0 +1,112 @@
+version: "3.1"
+
+services:
+  
+  #  elk部署
+  elasticsearch:
+#    image: my-elasticsearch:7.9.3-mysql
+    build:
+      context: "../elasticsearch"
+      dockerfile: "Dockerfile"
+
+ #   restart: always
+    hostname: elasticsearch
+    container_name: elasticsearch
+    privileged: true
+    ports:
+      - 9200:9200
+      - 9300:9300
+    volumes:
+      - ./config/elasticsearch/java.policy:/usr/share/elasticsearch/jdk/conf/security/java.policy
+      - ./config/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+      - ./config/elasticsearch/synonym.dic:/usr/share/elasticsearch/config/synonym/synonym.dic
+      - ./config/elasticsearch/analysis-ik/IKAnalyzer.cfg.xml:/usr/share/elasticsearch/config/analysis-ik/IKAnalyzer.cfg.xml
+      - ./config/elasticsearch/analysis-ik/jdbc-reload.properties:/usr/share/elasticsearch/config/analysis-ik/jdbc-reload.properties
+      - ./data/elasticsearch:/usr/share/elasticsearch/data
+#      - ./logs/elasticsearch:/usr/share/elasticsearch/logs
+#      - ./config/elasticsearch/elasticsearch-analysis-ansj/default.dic:/usr/share/elasticsearch/plugins/elasticsearch-analysis-ansj/default.dic
+#      - ./config/elasticsearch/elasticsearch-analysis-ansj/ambiguity.dic:/usr/share/elasticsearch/plugins/elasticsearch-analysis-ansj/ambiguity.dic
+#      - ./config/elasticsearch/elasticsearch-analysis-ansj/regex.dic:/usr/share/elasticsearch/plugins/elasticsearch-analysis-ansj/regex.dic
+#      - ./config/elasticsearch/elasticsearch-analysis-ansj/stop.dic:/usr/share/elasticsearch/plugins/elasticsearch-analysis-ansj/stop.dic
+#      - ./config/elasticsearch/elasticsearch-analysis-ansj/synonyms.dic:/usr/share/elasticsearch/plugins/elasticsearch-analysis-ansj/synonyms.dic
+#      - ./config/elasticsearch/elasticsearch-analysis-ansj/ansj_library.properties:/usr/share/elasticsearch/config/elasticsearch-analysis-ansj/ansj_library.properties
+#      - ./config/elasticsearch/elasticsearch-analysis-ansj/ansj.cfg.yml:/usr/share/elasticsearch/config/elasticsearch-analysis-ansj/ansj.cfg.yml
+    environment:
+      TZ: Asia/Shanghai
+      LANG: C.UTF-8
+
+
+
+  kibana:
+    container_name: kibana
+    hostname: kibana
+    image: kibana:7.9.3
+  #  restart: always
+    privileged: true
+    ports:
+      - 5601:5601
+    volumes:
+      - ./config/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
+      - ./data/kibana:/usr/share/kibana/data
+    environment:
+      - elasticsearch.hosts=http://elasticsearch:9200
+      - TZ=Asia/Shanghai
+      - LANG=C.UTF-8
+    depends_on:
+      - elasticsearch
+
+
+#  filebeat:
+#    # 容器名称
+#    container_name: filebeat
+#    # 主机名称
+#    hostname: filebeat
+#    # 镜像
+#    image: docker.elastic.co/beats/filebeat:7.4.2
+#    # 重启机制
+#    restart: always
+#    privileged: true
+#    environment:
+#      - TZ=Asia/Shanghai
+#      - LANG=C.UTF-8
+#    # 持久化挂载
+#    volumes:
+#      - ./config/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml
+#      # 映射到容器中[作为数据源]
+#      - ./logs/filebeat/:/usr/share/filebeat/logs
+#      - ./data/filebeat:/usr/share/filebeat/data
+#    # 将指定容器连接到当前连接，可以设置别名，避免ip方式导致的容器重启动态改变的无法连接情况
+#    links:
+#      - elasticsearch
+#      - logstash
+#      - kibana
+#    # 依赖服务[可无]
+#    depends_on:
+#      - elasticsearch
+#      - logstash
+#      - kibana
+#  logstash:
+#    container_name: logstash
+#    hostname: logstash
+#    image: logstash:7.4.2
+#    command: logstash -f ./conf/logstash-filebeat.conf
+#    restart: always
+#    privileged: true
+#    volumes:
+#      # 映射到容器中
+#      - ./config/logstash/logstash-filebeat.conf:/usr/share/logstash/conf/logstash-filebeat.conf
+#    environment:
+#      - elasticsearch.hosts=http://elasticsearch:9200
+#      # 解决logstash监控连接报错
+#      - xpack.monitoring.elasticsearch.hosts=http://elasticsearch:9200
+#      - TZ=Asia/Shanghai
+#      - LANG=C.UTF-8
+#    ports:
+#      - 5044:5044/tcp
+#      - 9600:9600/tcp
+#    links:
+#      - elasticsearch
+#      - kibana
+#    depends_on:
+#      - elasticsearch
+#      - kibana

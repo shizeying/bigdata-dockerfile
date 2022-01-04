@@ -1,0 +1,225 @@
+version: "3.1"
+
+services:
+  zookeeper:
+#    image: 'wurstmeister/zookeeper'
+    build:
+      context: ./
+      dockerfile: "Dockerfile-zookeeper"
+    ports:
+      - '2181:2181'
+      - '2888:2888'
+      - '3888:3888'
+    container_name: zookeeper
+    environment:
+      TZ: Asia/Shanghai
+      LANG: C.UTF-8
+    volumes:
+      - ./data/zk:/opt/zookeeper-3.4.9/data
+#    restart: always
+    networks:
+      - log-stream
+  kafka:
+#    image: 'wurstmeister/kafka'
+    build:
+      context: ./
+      dockerfile: "Dockerfile-kafka"
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 100
+      HOST_IP: localhost
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_ADVERTISED_PORT: 9092
+      KAFKA_LISTENERS: PLAINTEXT://kafka:9092
+      TZ: Asia/Shanghai
+      LANG: C.UTF-8
+#    restart: always
+
+    networks:
+      - log-stream
+  kafka-manager:
+    image: sheepkiller/kafka-manager
+    container_name: kafka-manager
+    environment:
+      ZK_HOSTS: zookeeper
+    ports:
+      - "9000:9000"
+    links:
+      - zookeeper
+      - kafka
+    depends_on:
+      - zookeeper
+      - kafka
+    networks:
+      - log-stream
+
+
+  flume:
+    build:
+      context: ./
+      dockerfile: "Dockerfile-flume"
+    container_name: flume
+    volumes:
+      - ./data/opt/logs:/opt/logs
+      - ./flume/flume.conf:/opt/flume/conf/flume.conf
+    environment:
+      FLUME_AGENT_NAME: docker
+    networks:
+      - log-stream
+    depends_on:
+      - kafka
+
+  flink-jobmanager:
+    build:
+      context: ./
+      dockerfile: "Dockerfile-flink"
+    container_name: flink-jobmanager
+    hostname: flink-jobmanager
+    expose:
+      - "6123"
+    ports:
+      - "8081:8081"
+    command: jobmanager
+    environment:
+      - JOB_MANAGER_RPC_ADDRESS=flink-jobmanager
+
+  flink-taskmanager:
+    build:
+      context: ./
+      dockerfile: "Dockerfile-flink"
+    container_name: flink-taskmanager
+    hostname: flink-taskmanager
+    expose:
+      - "6121"
+      - "6122"
+    depends_on:
+      - flink-jobmanager
+      - kafka
+      - elasticsearch
+    command: taskmanager
+    links:
+      - "flink-jobmanager:jobmanager"
+      - kafka
+      - elasticsearch
+    environment:
+      - JOB_MANAGER_RPC_ADDRESS=flink-jobmanager
+  #  elk部署
+  elasticsearch:
+    #    image: my-elasticsearch:7.9.3-mysql
+    build:
+      context: "../elasticsearch"
+      dockerfile: "Dockerfile"
+
+    #   restart: always
+    hostname: elasticsearch
+    container_name: elasticsearch
+    privileged: true
+    ports:
+      - 9200:9200
+      - 9300:9300
+    volumes:
+      - ./config/elasticsearch/java.policy:/usr/share/elasticsearch/jdk/conf/security/java.policy
+      - ./config/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+      - ./config/elasticsearch/synonym.dic:/usr/share/elasticsearch/config/synonym/synonym.dic
+      - ./config/elasticsearch/analysis-ik/IKAnalyzer.cfg.xml:/usr/share/elasticsearch/config/analysis-ik/IKAnalyzer.cfg.xml
+      - ./config/elasticsearch/analysis-ik/jdbc-reload.properties:/usr/share/elasticsearch/config/analysis-ik/jdbc-reload.properties
+      - ./data/elasticsearch:/usr/share/elasticsearch/data
+    environment:
+      TZ: Asia/Shanghai
+      LANG: C.UTF-8
+    networks:
+      - log-stream
+
+
+
+  kibana:
+    container_name: kibana
+    hostname: kibana
+    image: kibana:7.9.3
+    #  restart: always
+    privileged: true
+    ports:
+      - 5601:5601
+    volumes:
+      - ./config/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
+      - ./data/kibana:/usr/share/kibana/data
+    environment:
+      - elasticsearch.hosts=http://elasticsearch:9200
+      - TZ=Asia/Shanghai
+      - LANG=C.UTF-8
+    networks:
+      - log-stream
+    depends_on:
+      - elasticsearch
+    links:
+      - elasticsearch
+
+
+
+  filebeat:
+    # 容器名称
+    container_name: filebeat
+    # 主机名称
+    hostname: filebeat
+    # 镜像
+    image: docker.elastic.co/beats/filebeat:7.9.3
+    # 重启机制
+#    restart: always
+    privileged: true
+    networks:
+      - log-stream
+    environment:
+      - TZ=Asia/Shanghai
+      - LANG=C.UTF-8
+    # 持久化挂载
+    volumes:
+      - ./config/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml
+      # 映射到容器中[作为数据源]
+      - ./logs/filebeat/:/usr/share/filebeat/logs
+      - ./data/filebeat:/usr/share/filebeat/data
+    # 将指定容器连接到当前连接，可以设置别名，避免ip方式导致的容器重启动态改变的无法连接情况
+    links:
+      - elasticsearch
+      - logstash
+      - kibana
+    # 依赖服务[可无]
+    depends_on:
+      - elasticsearch
+      - logstash
+      - kibana
+  logstash:
+    container_name: logstash
+    hostname: logstash
+    image: logstash:7.9.3
+    command: logstash -f ./conf/logstash-filebeat.conf
+#    restart: always
+    networks:
+      - log-stream
+    privileged: true
+    volumes:
+      # 映射到容器中
+      - ./config/logstash/logstash-filebeat.conf:/usr/share/logstash/conf/logstash-filebeat.conf
+    environment:
+      - elasticsearch.hosts=http://elasticsearch:9200
+      # 解决logstash监控连接报错
+      - xpack.monitoring.elasticsearch.hosts=http://elasticsearch:9200
+      - TZ=Asia/Shanghai
+      - LANG=C.UTF-8
+    ports:
+      - 5044:5044/tcp
+      - 9600:9600/tcp
+    links:
+      - elasticsearch
+      - kibana
+    depends_on:
+      - elasticsearch
+      - kibana
+
+networks:
+  log-stream:
+    driver: bridge

@@ -1,0 +1,5 @@
+# Created by .ignore support plugin (hsz.mobi)
+resources/elk-cluster/data
+resources/elk/data
+resources/apollo/mysql
+resources/log-stream/data

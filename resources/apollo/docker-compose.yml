@@ -1,0 +1,93 @@
+version: "3"
+services:
+
+  # apploo
+#  apollo-quick-start:
+#    image: nobodyiam/apollo-quick-start
+#    container_name: apollo-quick-start
+#    hostname: apollo
+#    restart: always
+#    privileged: true
+#    environment:
+#      - EUREKA_INSTANCE_IP_ADDRESS=0.0.0.0
+#      - APOLLO_CONFIG_DB_URL=jdbc:mysql://mysql:3306/ApolloConfigDB?characterEncoding=utf8
+#      - APOLLO_PORTAL_DB_URL=jdbc:mysql://mysql:3306/ApolloPortalDB?characterEncoding=utf8
+#      - APOLLO_DB_USERNAME=root
+#      - APOLLO_DB_PASSWORD=root@hiekn
+#    volumes:
+#      - ./apollo/demo.sh:/apollo-quick-start/demo.sh
+#    depends_on:
+#      - mysql
+#    ports:
+#      - "8090:8090"
+#      - "8080:8080"
+#      - "8070:8070"
+#    links:
+#      - mysql
+  nacos:
+    image: nacos/nacos-server:1.2.1
+    container_name: nacos
+#    restart: always
+    depends_on:
+      - mysql
+    environment:
+      PREFER_HOST_MODE: mac.local #如果支持主机名可以使用hostname,否则使用ip，默认也是ip
+      SPRING_DATASOURCE_PLATFORM: mysql #数据源平台 仅支持mysql或不保存empty
+      MODE: standalone
+      MYSQL_SERVICE_HOST: mysql
+      MYSQL_SERVICE_DB_NAME: nacos
+      MYSQL_SERVICE_PORT: 3306
+      MYSQL_SERVICE_USER: root
+      MYSQL_SERVICE_PASSWORD: root@hiekn
+      NACOS_APPLICATION_PORT: 8848
+      JVM_XMS: 512m
+      JVM_MMS: 320m
+    volumes:
+      - ./nacos/standalone-logs/:/home/nacos/logs
+      - ./nacos/plugins/:/home/nacos/plugins
+      - ./nacos/conf/application.properties:/home/nacos/conf/application.properties
+    ports:
+      - "8848:8848"
+  mysql:
+    image: mysql:5.7.25
+    container_name: mysql
+    #restart: always
+    hostname: mysql
+#    privileged: true
+    command: [
+        '--character-set-server=utf8',
+        '--collation-server=utf8_general_ci',
+        '--default-time-zone=+8:00' # 这句不是重点
+    ]
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: root@hiekn
+      LANG: C.UTF-8
+    depends_on:
+      - apollo-dbdata
+    ports:
+      - 3306:3306
+    volumes:
+      - ./sql:/docker-entrypoint-initdb.d
+      - ./mysql:/var/lib/mysql
+    volumes_from:
+      - apollo-dbdata
+  apollo-dbdata:
+    image: alpine:latest
+    container_name: apollo-dbdata
+    volumes:
+      - /var/lib/mysql
+
+
+#  consul:
+#    image: consul
+#    container_name: consul
+#    hostname: consul
+#    restart: always
+#    privileged: true
+#    command: agent  -server -ui -bootstrap-expect=1 -bind=0.0.0.0  -client=0.0.0.0
+#    environment:
+#      - 'CONSUL_LOCAL_CONFIG={"skip_leave_on_interrupt": true}'
+#      - LANG=C.UTF-8
+#    ports:
+#      - 8500:8500/tcp

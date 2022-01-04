@@ -1,0 +1,27 @@
+version: "3"
+services:
+  master:
+    image: ccr.ccs.tencentyun.com/junwei/spark2.4
+    hostname: master
+    restart: always
+    ports:
+      - "4040:4040"
+      - "8043:8042"
+      - "7077:7077"
+      - "8088:8088"
+      - "8081:8080"
+    command: bash /usr/local/spark/sbin/start-master.sh && ping localhost > /dev/null
+    # 这里我将所需的jar包和spark应用挂载到此处，方便在容器中运行
+    volumes:
+      - ./spark-job:/home
+
+  worker1:
+    image: ccr.ccs.tencentyun.com/junwei/spark2.4
+    restart: always
+    depends_on:
+      - master
+    expose:
+      - "8082"
+    command: bash /usr/local/spark/sbin/start-slave.sh spark://master:7077 && ping localhost >/dev/null
+    volumes:
+      - ./spark-job:/home

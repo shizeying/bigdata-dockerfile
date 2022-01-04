@@ -1,0 +1,17 @@
+version: '3.1'
+services:
+  redis:
+    image: redis
+    restart: always
+    privileged: true
+    command: redis-server /etc/redis/redis.conf
+    container_name: redis
+    ports:
+      - 6379:6379
+    volumes:
+      - ./data/redis:/data
+      - ./config/redis/redis.conf:/etc/redis/redis.conf
+    environment:
+      TZ: Asia/Shanghai
+      LANG: C.UTF-8
+

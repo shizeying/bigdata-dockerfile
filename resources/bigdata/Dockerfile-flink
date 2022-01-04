@@ -1,0 +1,4 @@
+FROM flink:1.11.3-scala_2.12-java8
+
+ENV TIME_ZONE=Asia/Shanghai
+RUN ln -snf /usr/share/zoneinfo/$TIME_ZONE /etc/localtime

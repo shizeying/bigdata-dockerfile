@@ -20,6 +20,13 @@ COPY hadoop.tar.gz   /app/
 RUN mkdir -p /app/hadoop
 RUN tar zxf /app/hadoop.tar.gz  --strip-components=1  -C  /app/hadoop && \
 	rm -rf /app/hadoop.tar.gz
+
+
+
+
+
+
+
 ENV HADOOP_HOME /app/hadoop
 ENV HADOOP_PREFIX /app/hadoop
 ENV HADOOP_COMMON_HOME /app/hadoop

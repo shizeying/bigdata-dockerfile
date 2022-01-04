@@ -1,0 +1,4 @@
+FROM wurstmeister/zookeeper
+
+ENV TIME_ZONE=Asia/Shanghai
+RUN ln -snf /usr/share/zoneinfo/$TIME_ZONE /etc/localtime

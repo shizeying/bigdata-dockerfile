@@ -1,0 +1,11 @@
+# 服务端口
+server.port: 5601
+# 服务IP
+server.host: "0.0.0.0"
+# ES
+elasticsearch.hosts: ["http://es01:9200","http://es02:9200","http://es03:9200"]
+#elasticsearch.hosts: ["http://elasticsearch:9200"]
+#elasticsearch.username: "kibana"
+#elasticsearch.password: "root@hiekn"
+# 汉化
+i18n.locale: "zh-CN"

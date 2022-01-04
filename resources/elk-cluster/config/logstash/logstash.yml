@@ -1,0 +1,6 @@
+# X-Pack Monitoring
+xpack.monitoring.enabled: true
+xpack.monitoring.elasticsearch.hosts: ["http://elasticsearch:9200"]
+
+# X-Pack Management
+xpack.management.enabled: false

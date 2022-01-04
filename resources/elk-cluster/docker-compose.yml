@@ -1,0 +1,133 @@
+version: '3.7'
+services:
+  es01:
+    build:
+      context: "../elasticsearch"
+      dockerfile: "Dockerfile"
+    container_name: es01
+    hostname: es01
+    privileged: true
+    restart: always
+    environment:
+      - node.name=es01
+      - cluster.name=elasticsearch
+      - discovery.seed_hosts=es02,es03
+      - cluster.initial_master_nodes=es01,es02,es03
+      - bootstrap.memory_lock=false
+      - network.host=0.0.0.0
+      - http.cors.allow-origin= "*"
+      - http.cors.enabled=true
+      - TZ=Asia/Shanghai
+      - LANG=C.UTF-8
+      - "ES_JAVA_OPTS=-Xms3G -Xmx3G"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ./config/elasticsearch/java.policy:/usr/share/elasticsearch/jdk/conf/security/java.policy
+      - ./config/elasticsearch/synonym.dic:/usr/share/elasticsearch/config/synonym/synonym.dic
+      - ./config/elasticsearch/analysis-ik/IKAnalyzer.cfg.xml:/usr/share/elasticsearch/config/analysis-ik/IKAnalyzer.cfg.xml
+      - ./config/elasticsearch/analysis-ik/jdbc-reload.properties:/usr/share/elasticsearch/config/analysis-ik/jdbc-reload.properties
+      - ./data/es01:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+      - 9300:9300
+    networks:
+      - elastic
+  es02:
+    build:
+      context: "../elasticsearch"
+      dockerfile: "Dockerfile"
+    container_name: es02
+    hostname: es02
+    privileged: true
+    restart: always
+    environment:
+      - node.name=es02
+      - cluster.name=elasticsearch
+      - discovery.seed_hosts=es01,es03
+      - cluster.initial_master_nodes=es01,es02,es03
+      - bootstrap.memory_lock=false
+      - network.host=0.0.0.0
+      - http.cors.allow-origin= "*"
+      - http.cors.enabled=true
+      - TZ=Asia/Shanghai
+      - LANG=C.UTF-8
+      - "ES_JAVA_OPTS=-Xms3G -Xmx3G"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - 9201:9200
+      - 9301:9300
+    volumes:
+      - ./config/elasticsearch/java.policy:/usr/share/elasticsearch/jdk/conf/security/java.policy
+      - ./config/elasticsearch/synonym.dic:/usr/share/elasticsearch/config/synonym/synonym.dic
+      - ./config/elasticsearch/analysis-ik/IKAnalyzer.cfg.xml:/usr/share/elasticsearch/config/analysis-ik/IKAnalyzer.cfg.xml
+      - ./config/elasticsearch/analysis-ik/jdbc-reload.properties:/usr/share/elasticsearch/config/analysis-ik/jdbc-reload.properties
+      - ./data/es02:/usr/share/elasticsearch/data
+    networks:
+      - elastic
+  es03:
+    build:
+      context: "../elasticsearch"
+      dockerfile: "Dockerfile"
+    container_name: es03
+    hostname: es03
+    privileged: true
+    restart: always
+    environment:
+      - node.name=es03
+      - cluster.name=elasticsearch
+      - discovery.seed_hosts=es01,es02
+      - cluster.initial_master_nodes=es01,es02,es03
+      - bootstrap.memory_lock=false
+      - network.host=0.0.0.0
+      - http.cors.allow-origin= "*"
+      - http.cors.enabled=true
+      - TZ=Asia/Shanghai
+      - LANG=C.UTF-8
+      - "ES_JAVA_OPTS=-Xms3G -Xmx3G"
+    ports:
+      - 9202:9200
+      - 9302:9300
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ./config/elasticsearch/java.policy:/usr/share/elasticsearch/jdk/conf/security/java.policy
+      - ./config/elasticsearch/synonym.dic:/usr/share/elasticsearch/config/synonym/synonym.dic
+      - ./config/elasticsearch/analysis-ik/IKAnalyzer.cfg.xml:/usr/share/elasticsearch/config/analysis-ik/IKAnalyzer.cfg.xml
+      - ./config/elasticsearch/analysis-ik/jdbc-reload.properties:/usr/share/elasticsearch/config/analysis-ik/jdbc-reload.properties
+      - ./data/es03:/usr/share/elasticsearch/data
+    networks:
+      - elastic
+  kibana:
+    container_name: kibana
+    hostname: kibana
+    image: kibana:7.9.3
+    restart: always
+    privileged: true
+    ports:
+      - 5601:5601
+    volumes:
+      - ./config/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
+    environment:
+      - TZ=Asia/Shanghai
+      - LANG=C.UTF-8
+    networks:
+      - elastic
+volumes:
+  data01:
+    driver: local
+  data02:
+    driver: local
+  data03:
+    driver: local
+
+networks:
+  elastic:
+    driver: bridge

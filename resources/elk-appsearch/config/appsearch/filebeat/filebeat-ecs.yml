@@ -1,0 +1,78 @@
+#============================== Log sources ===================================
+
+filebeat.inputs:
+- type: log
+  enabled: true
+  json.message_key:
+  json.keys_under_root: true
+  json.overwrite_keys: true # get timestamp from the log, etc
+  # ENT_SEARCH_FILEBEAT_LOGS will be set to the value of `filebeat_log_directory`
+  # in config/enterprise-search.yml
+  paths:
+    - ${ENT_SEARCH_FILEBEAT_LOGS}/filebeat.log*
+    - ${ENT_SEARCH_FILEBEAT_LOGS}/ecs_api_requests.log*
+    - ${ENT_SEARCH_FILEBEAT_LOGS}/ecs_app_search_analytics.log*
+    - ${ENT_SEARCH_FILEBEAT_LOGS}/workplace_search_analytics.log*
+
+# Drop events that:
+# - don't have a dataset/log_identifier (malformed json, etc) so that index name generator does not fail
+# - has a skip_ingest field
+processors:
+  - drop_event.when.and:
+    - not.has_fields: ['event.dataset']
+    - not.has_fields: ['labels.log_identifier']
+  - drop_event.when.has_fields: ['labels.skip_ingest']
+
+#================================ Outputs ======================================
+
+# Configure what output to use when sending the data collected by the beat.
+
+#-------------------------- Elasticsearch output -------------------------------
+output.elasticsearch:
+  # Array of hosts to connect to.
+  # Scheme and port can be left out and will be set to the default (http and 9200)
+  # In case you specify an additional path, the scheme is required: http://localhost:9200/path
+  # IPv6 addresses should always be defined as: https://[2001:db8::1]:9200
+  # ELASTICSEARCH_HOST will be set to the value of `elasticsearch.host` in config/enterprise-search.yml
+  hosts: ["${ELASTICSEARCH_HOST}"]
+
+  # Optional protocol and basic auth credentials.
+  #protocol: "https"
+
+  # ELASTICSEARCH_USERNAME and ELASTICSEARCH_PASSWORD will be set to the values of
+  # `elasticsearch.username` and `elasticsearch.password`, respectively, in config/enterprise-search.yml
+  username: "${ELASTICSEARCH_USERNAME}"
+  password: "${ELASTICSEARCH_PASSWORD}"
+
+  # Custom HTTP headers are set to the values of `elasticsearch.headers` in config/enterprise-search.yml
+  headers: ${ELASTICSEARCH_HEADERS}
+
+  # SSL variables are set to the values of `elasticsearch.ssl` in config/enterprise-search.yml
+  ssl: ${ELASTICSEARCH_SSL}
+
+#========================= ILM and template settings ==========================
+
+# ILM and index templates are managed at the application level.
+setup.ilm.enabled: false
+setup.template.enabled: false
+
+#================================= Paths ======================================
+
+# The home path for the filebeat installation. This is the default base path
+# for all other path settings and for miscellaneous files that come with the
+# distribution (for example, the sample dashboards).
+# If not set by a CLI flag or in the configuration file, the default for the
+# home path is the location of the binary.
+path.home: ${FILEBEAT_DIR}
+
+# Configure log rotation
+# ENT_SEARCH_FILEBEAT_LOGS will be set to the value of `filebeat_log_directory` in config/enterprise-search.yml
+logging:
+  level: info
+  to_files: true
+  files:
+    path: ${ENT_SEARCH_FILEBEAT_LOGS}
+    name: filebeat
+    keepfiles: 10
+    rotateeverybytes: 10485760 # 10Mb
+    permissions: 0644

@@ -47,13 +47,13 @@ docker build -t jdk-scala .
 ```dockerfile
 docker build -t hadoop .
 && docker run
--p 50070:50070 -p 60010:60010 -p 8081:8081 -p 2181:2181 -p 19888:19888 -p 8020:8020 -p 9092:9092 -p 9093:9093 -p 9001:9000 -p 8088:8088 -p 16201:16201 -p 16301:16301 \
---name hadoop \
--h hadoop \
--e ADVERTISED_HOST=127.0.0.1 -e ADVERTISED_PORT=9092 \
---restart always \
---network bigdata \
---ip 172.22.16.3 \
+-p 50070:50070 -p 60010:60010 -p 8081:8081 -p 2181:2181 -p 19888:19888 -p 8020:8020 -p 9092:9092 -p 9000:9000 -p 8088:8088 -p 16201:16201 -p 16301:16301 -p 8085:8085 -p 9095:9095
+--name hadoop
+-h hadoop
+-e ADVERTISED_HOST=127.0.0.1 -e ADVERTISED_PORT=9092
+--restart always
+--network bigdata
+--ip 172.22.16.3
 hadoop 
 ```
 
