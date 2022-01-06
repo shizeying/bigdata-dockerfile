@@ -19,8 +19,8 @@ services:
     volumes:
       - ./config/elasticsearch/java.policy:/usr/share/elasticsearch/jdk/conf/security/java.policy
       - ./config/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
-#      - ./config/elasticsearch/jvm.options:/usr/share/elasticsearch/config/jvm.options
-      - ./config/elasticsearch/elasticsearch.keystore:/usr/share/elasticsearch/config/elasticsearch.keystore
+      - ./config/elasticsearch/jvm.options:/usr/share/elasticsearch/config/jvm.options
+#      - ./config/elasticsearch/elasticsearch.keystore:/usr/share/elasticsearch/config/elasticsearch.keystore
 #      - ./config/elasticsearch/synonym.dic:/usr/share/elasticsearch/config/synonym/synonym.dic
 #      - ./config/elasticsearch/analysis-ik/IKAnalyzer.cfg.xml:/usr/share/elasticsearch/config/analysis-ik/IKAnalyzer.cfg.xml
 #      - ./config/elasticsearch/analysis-ik/jdbc-reload.properties:/usr/share/elasticsearch/config/analysis-ik/jdbc-reload.properties
