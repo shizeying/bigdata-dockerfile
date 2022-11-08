@@ -1,0 +1,22 @@
+<configuration>
+	<!-- 指定hdfs的nameservice为ctns-->
+	<property>
+		<name>fs.defaultFS</name>
+		<value>hdfs://ctns</value>
+	</property>
+	<!--指定hadoop数据临时存放目录-->
+	<property>
+		<name>hadoop.tmp.dir</name>
+		<value>file:/opt/hadoop-2.6.0-cdh5.16.1/tmp</value>
+	</property>
+	
+	<property>
+		<name>io.file.buffer.size</name>
+		<value>4096</value>
+	</property>
+	<!--指定zookeeper地址-->
+	<property>
+		<name>ha.zookeeper.quorum</name>
+		<value>bigdata-master:2181,bigdata-slave1:2181,bigdata-slave2:2181,bigdata-slave3:2181,bigdata-slave4:2181</value>
+	</property>
+</configuration>

@@ -3,3 +3,6 @@ resources/elk-cluster/data
 resources/elk/data
 resources/apollo/mysql
 resources/log-stream/data
+*/*/*.log
+*/*/*.log.*
+*/*/*.out*

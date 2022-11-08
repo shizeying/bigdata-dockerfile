@@ -1,0 +1,1 @@
+sed -i 's/mac.local/192.168.5.125/g'  java.policy

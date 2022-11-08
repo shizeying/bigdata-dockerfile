@@ -1,0 +1,39 @@
+echo "
+BOOTPROTO=none
+DEFROUTE=yes
+DEVICE=eth0
+GATEWAY=2.56.184.1
+HWADDR=需要修改
+IPADDR=2.56.184.7
+IPV6ADDR=2605:52c0:2:21b::/48
+IPV6INIT=yes
+IPV6_DEFAULTGW=2605:52c0:2::1
+ONBOOT=yes
+TYPE=Ethernet
+USERCTL=no
+NAME=eth0
+EVICE=eth0
+NETMASK=255.255.255.0
+" > /etc/sysconfig/network-scripts/ifcfg-eth0
+
+
+echo "
+BOOTPROTO=none
+DEFROUTE=yes
+DEVICE=eth0
+GATEWAY=154.17.2.1
+HWADDR=需要修改
+IPADDR=154.17.2.194
+IPV6ADDR=2605:52c0:2:21b::/48
+IPV6INIT=yes
+IPV6_DEFAULTGW=2605:52c0:2::1
+NETMASK=255.255.255.0
+ONBOOT=yes
+TYPE=Ethernet
+USERCTL=no
+NAME=eth0:0
+EVICE=eth0:0
+" > /etc/sysconfig/network-scripts/ifcfg-eth0:0
+
+
+systemctl restart network.service

@@ -1,0 +1,82 @@
+<configuration>
+	<!-- 指定hdfs的nameservice为ctns，需要和core-site.xml中的保持一致 -->
+	<property>
+		<name>dfs.nameservices</name>
+		<value>ctns</value>
+	</property>
+	<!-- ctns下面有两个NameNode，分别是node01，node02 -->
+	<property>
+		<name>dfs.ha.namenodes.ctns</name>
+		<value>node01, node02</value>
+	</property>
+	<!-- node01 的RPC通信地址 -->
+	<property>
+		<name>dfs.namenode.rpc-address.ctns.node01</name>
+		<value>bigdata-master:9000</value>
+	</property>
+	<!-- node01 的http通信地址 -->
+	<property>
+		<name>dfs.namenode.http-address.ctns.node01</name>
+		<value>bigdata-master:50070</value>
+	</property>
+	<!-- node02 的RPC通信地址 -->
+	<property>
+		<name>dfs.namenode.rpc-address.ctns.node02</name>
+		<value>bigdata-slave1:9000</value>
+	</property>
+	<!-- node02 的http通信地址 -->
+	<property>
+		<name>dfs.namenode.http-address.ctns.node02</name>
+		<value>bigdata-slave1:50070</value>
+	</property>
+	<!-- 指定NameNode的元数据在JournalNode上的存放位置 -->
+	<property>
+		<name>dfs.namenode.shared.edits.dir</name>
+		<value>qjournal://bigdata-master:8485;bigdata-slave1:8485;bigdata-slave2:8485;bigdata-slave3:8485;bigdata-slave4:8485/ctns</value>
+	</property>
+	<!-- 指定JournalNode在本地磁盘存放数据的位置 -->
+	<property>
+		<name>dfs.journalnode.edits.dir</name>
+		<value>/opt/hadoop-2.6.0-cdh5.16.1/journal</value>
+	</property>
+	<!-- 开启NameNode故障时自动切换 -->
+	<property>
+		<name>dfs.ha.automatic-failover.enabled</name>
+		<value>true</value>
+	</property>
+	<!-- 配置失败自动切换实现方式 -->
+	<property>
+		<name>dfs.client.failover.proxy.provider.ctns</name>
+		<value>org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider</value>
+	</property>
+	<!-- 配置隔离机制 -->
+	<property>
+		<name>dfs.ha.fencing.methods</name>
+		<value>sshfence</value>
+	</property>
+	<!-- 使用隔离机制时需要ssh免登陆 -->
+	<property>
+		<name>dfs.ha.fencing.ssh.private-key-files</name>
+		<value>/root/.ssh/id_rsa</value>
+	</property>
+	
+	<!-- 当前节点为name节点时的元信息存储路径.这个参数设置为多个目录，那么这些目录下都保存着元信息的多个备份 -->
+	<property>
+		<name>dfs.namenode.name.dir</name>
+		<value>file:///opt/hadoop-2.6.0-cdh5.16.1/hdfs/name</value>
+	</property>
+	<!-- 当前节点为data节点时的元信息存储路径.这个参数设置为多个目录，那么这些目录下都保存着数据信息的多个备份 -->
+	<property>
+		<name>dfs.datanode.data.dir</name>
+		<value>file:///opt/hadoop-2.6.0-cdh5.16.1/hdfs/data</value>
+	</property>
+	
+	<property>
+		<name>dfs.replication</name>
+		<value>2</value>
+	</property>
+	<property>
+		<name>dfs.permissions.enabled</name>
+		<value>false</value>
+	</property>
+</configuration>

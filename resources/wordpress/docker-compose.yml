@@ -1,0 +1,32 @@
+version: '3.1'
+services:
+
+  wordpress:
+    depends_on:
+      - db
+    image: wordpress
+    restart: always
+    ports:
+      - 8080:80
+    volumes:
+      - /etc/nginx/html:/var/www/html
+      - ./uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
+    environment:
+      TZ: Asia/Shanghai
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+
+  db:
+    image: mysql:5.7
+    restart: always
+    volumes:
+      - /opt/wordpress/mysql/db:/var/lib/mysql
+      - /opt/wordpress/mysql/conf/:/etc/my.cnf
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+      MYSQL_ROOT_PASSWORD: wordpress
