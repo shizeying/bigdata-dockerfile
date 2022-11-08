@@ -26,12 +26,13 @@ allow_es_settings_modification: true
 #
 # Elasticsearch full cluster URL:
 #
-elasticsearch.host: http://elasticsearch:9200
+elasticsearch.host: ["http://es01:9200","http://es02:9200","http://es03:9200","http://es04:9200","http://es05:9200"]
+xpack.monitoring.elasticsearch.hosts: ["http://es01:9200","http://es02:9200","http://es03:9200","http://es04:9200","http://es05:9200"]
 #
 # Elasticsearch credentials:
 #
 elasticsearch.username: elastic
-elasticsearch.password: elastic
+elasticsearch.password: 123456
 #ent_search.auth.native1.source: elasticsearch-native
 #
 # Elasticsearch custom HTTP headers to add to each request:
