@@ -17,7 +17,9 @@ services:
     volumes:
       - ./conf.d:/etc/nginx/conf.d
       - ./conf:/usr/local/openresty/nginx/conf
+      - ./lua:/usr/local/openresty/nginx/lua
       - ./logs:/usr/local/openresty/nginx/logs
 
     ports:
       - "80:80"
+      - "81:81"
