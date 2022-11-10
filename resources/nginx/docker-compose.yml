@@ -2,18 +2,72 @@ version: '3.1'
 
 
 services:
-  #ngnix
   nginx:
     image: nginx
     restart: always
     container_name: nginx
     privileged: true
     ports:
-      - 80:80
+      - "80:80"
     volumes:
-      - /work/nginx/html:/usr/share/nginx/html
-      - ./nginx.conf:/etc/nginx/nginx.conf
-      - ./conf.d:/etc/nginx/conf.d
+      - ./conf:/usr/local/nginx/conf
+    networks:
+      - elastic
+    depends_on:
+      - consul
+
+
+  consul:
+    image: consul
+    container_name: consul
+    hostname: consul
+    restart: always
+    privileged: true
+    command: agent  -server -ui -bootstrap-expect=1 -bind=0.0.0.0  -client=0.0.0.0
+    environment:
+      - 'CONSUL_LOCAL_CONFIG={"skip_leave_on_interrupt": true}'
+      - LANG=C.UTF-8
+    ports:
+      - "8500:8500/tcp"
+    networks:
+      - elastic
+  
+  nginx1:
+    image: nginx
+    restart: always
+    container_name: nginx1
+    privileged: true
+    ports:
+      - "8012:80"
+    volumes:
+      - ./html/index1.html:/usr/local/nginx/html/index.html
+    networks:
+      - elastic
+  nginx2:
+    image: nginx
+    restart: always
+    container_name: nginx2
+    privileged: true
+    ports:
+      - "8011:80"
+    volumes:
+      - ./html/index2.html:/usr/local/nginx/html/index.html
     environment:
       TZ: Asia/Shanghai
       LANG: C.UTF-8
+    networks:
+      - elastic
+  nginx3:
+    image: nginx
+    restart: always
+    container_name: nginx3
+    privileged: true
+    ports:
+      - "8013:80"
+    volumes:
+      - ./html/index3.html:/usr/local/nginx/html/index.html
+    networks:
+      - elastic
+networks:
+  elastic:
+    driver: bridge
