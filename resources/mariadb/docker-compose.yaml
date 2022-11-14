@@ -1,21 +1,71 @@
 version: '3.1'
 services:
   db:
-    image: mariadb
-    container_name: "mysql"
+    image: mysql
+    container_name: db
     hostname: db
     restart: always
     command: [
+      '--default-authentication-plugin=mysql_native_password',
       '--character-set-server=utf8mb4',
-      '--collation-server=utf8mb4_general_ci'
+      '--collation-server=utf8mb4_general_ci',
+      '--explicit_defaults_for_timestamp=true'
     ]
     environment:
-      MYSQL_USER: "root"
-      MYSQL_PASSWORD: "shizeying"
-      MYSQL_ROOT_PASSWORD: "shizeying"
-      TZ: "Asia/Shanghai"
+      - MYSQL_USER:=root
+      - MYSQL_PASSWORD=shizeying
+      - MYSQL_ROOT_PASSWORD=shizeying
+      - TZ=Asia/Shanghai
     ports:
       - "33060:3306"
     volumes:
+      - /etc/localtime:/etc/localtime:ro
       - ./data:/var/lib/mysql
       - ./log:/var/log/mysql
+    networks:
+      - blog
+
+  halo:
+    image: halohub/halo
+    container_name: halo
+    hostname: halo
+    volumes:
+      - ./halo:/root/.halo
+    ports:
+      - "8090:8090"
+    environment:
+      - SERVER_PORT=8090
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/halo_db?characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=shizeying
+      - HALO_ADMIN_PATH=admin
+      - HALO_CACHE=redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_REDIS_DATABASE=0
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PASSWORD=dm5fD%rvPtq
+      - TZ=Asia/Shanghai
+    depends_on:
+      - db
+      - redis
+    networks:
+      - blog
+  redis:
+    image: redis
+    container_name: redis
+    hostname: redis
+    volumes:
+      - ./redis/data:/data
+      - ./redis/logs:/logs
+    # 请修改此密码，并对应修改上方 Halo 服务的 SPRING_REDIS_PASSWORD 变量值
+    command: "redis-server --requirepass dm5fD%rvPtq"
+    environment:
+      - TZ=Asia/Shanghai
+    ports:
+      - "63790:6379"
+    networks:
+      - blog
+networks:
+  blog:
+    driver: bridge
