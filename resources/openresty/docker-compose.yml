@@ -19,7 +19,48 @@ services:
       - ./conf:/usr/local/openresty/nginx/conf
       - ./lua:/usr/local/openresty/nginx/lua
       - ./logs:/usr/local/openresty/nginx/logs
-
     ports:
       - "80:80"
       - "81:81"
+    depends_on:
+      - go1
+      - go2
+      - go3
+    networks:
+      - openresty
+  go1:
+    build:
+      dockerfile: ./Dockerfile-go
+    container_name: go1
+    hostname: go1
+    privileged: true
+    restart: always
+    environment:
+      - port=8001
+    networks:
+      - openresty
+  go2:
+    build:
+      dockerfile: ./Dockerfile-go
+    container_name: go2
+    hostname: go3
+    privileged: true
+    restart: always
+    environment:
+      - port=7001
+    networks:
+      - openresty
+  go3:
+    build:
+      dockerfile: ./Dockerfile-go
+    container_name: go3
+    hostname: go3
+    privileged: true
+    restart: always
+    environment:
+      - port=8002
+    networks:
+      - openresty
+networks:
+  openresty:
+    driver: bridge

@@ -1,0 +1,6 @@
+FROM golang:latest
+ADD main.go /opt
+WORKDIR /opt
+
+ENV port=8001
+ENTRYPOINT go run main.go -port=$port
