@@ -16,7 +16,7 @@ services:
       MYSQL_ROOT_PASSWORD: root
       LANG: C.UTF-8
     ports:
-      - 3306:3306
+      - 13306:3306
     volumes:
       - ./sql:/docker-entrypoint-initdb.d
       - ./mysql:/var/lib/mysql
@@ -37,22 +37,27 @@ services:
       - ./standalone-logs/:/home/nacos/logs
     ports:
       - "9999:9999"
-  prometheus:
-    container_name: prometheus
-    image: prom/prometheus:${prometheusVersion}
-    volumes:
-      - ./config/prometheus/prometheus-standalone.yaml:/etc/prometheus/prometheus.yml
-    ports:
-      - "9090:9090"
-    depends_on:
-      - nacos
-    restart: on-failure
-  grafana:
-    container_name: grafana
-    image: grafana/grafana:${grafanaVersion}
-    ports:
-      - 3000:3000
-    restart: on-failure
+#  prometheus:
+#    container_name: prometheus
+#    image: prom/prometheus:${prometheusVersion}
+#    volumes:
+#      - ./config/prometheus/prometheus-standalone.yaml:/etc/prometheus/prometheus.yml
+#      - ./data/prometheus:/etc/prometheus
+#    ports:
+#      - "9090:9090"
+#    depends_on:
+#      - nacos
+#    restart: on-failure
+#  grafana:
+#    container_name: grafana
+#    image: grafana/grafana:${grafanaVersion}
+#    ports:
+#      - 3000:3000
+#    restart: on-failure
+#    volumes:
+#      - ./data/grafana:/var/lib/grafana
+#    depends_on:
+#      - prometheus
   #   apploo
   apollo:
     image: nobodyiam/apollo-quick-start:${apolloVersion}
@@ -69,49 +74,49 @@ services:
     depends_on:
       - mysql
     ports:
-      - "8090:8090"
-      - "8080:8080"
-      - "8070:8070"
-  elasticsearch:
-    build:
-      context: "../elasticsearch"
-      dockerfile: "Dockerfile"
-    #   restart: always
-    hostname: elasticsearch
-    container_name: elasticsearch
-    privileged: true
-    ports:
-      - 9200:9200
-      - 9300:9300
-      - 9250:5000
-    volumes:
-      - ./config/elasticsearch/java.policy:/usr/share/elasticsearch/jdk/conf/security/java.policy
-      - ./config/elasticsearch/jvm.options:/usr/share/elasticsearch/config/jvm.options
-      - ./config/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
-      - ./config/elasticsearch/synonym.dic:/usr/share/elasticsearch/config/synonym/synonym.dic
-      - ./config/elasticsearch/analysis-ik/IKAnalyzer.cfg.xml:/usr/share/elasticsearch/config/analysis-ik/IKAnalyzer.cfg.xml
-      - ./config/elasticsearch/analysis-ik/jdbc-reload.properties:/usr/share/elasticsearch/config/analysis-ik/jdbc-reload.properties
-      - ./data/elasticsearch:/usr/share/elasticsearch/data
-    environment:
-      TZ: Asia/Shanghai
-      LANG: C.UTF-8
-  kibana:
-    container_name: kibana
-    hostname: kibana
-    image: kibana:${elasticsearchVersion}
-    #  restart: always
-    privileged: true
-    ports:
-      - 5601:5601
-    volumes:
-      - ./config/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
-      - ./data/kibana:/usr/share/kibana/data
-    environment:
-      - elasticsearch.hosts=http://elasticsearch:9200
-      - TZ=Asia/Shanghai
-      - LANG=C.UTF-8
-    depends_on:
-      - elasticsearch
+      - "18090:8090"
+      - "18080:8080"
+      - "18070:8070"
+#  elasticsearch:
+#    build:
+#      context: "../elasticsearch"
+#      dockerfile: "Dockerfile"
+#    #   restart: always
+#    hostname: elasticsearch
+#    container_name: elasticsearch
+#    privileged: true
+#    ports:
+#      - 9200:9200
+#      - 9300:9300
+#      - 9250:5000
+#    volumes:
+#      - ./config/elasticsearch/java.policy:/usr/share/elasticsearch/jdk/conf/security/java.policy
+#      - ./config/elasticsearch/jvm.options:/usr/share/elasticsearch/config/jvm.options
+#      - ./config/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+#      - ./config/elasticsearch/synonym.dic:/usr/share/elasticsearch/config/synonym/synonym.dic
+#      - ./config/elasticsearch/analysis-ik/IKAnalyzer.cfg.xml:/usr/share/elasticsearch/config/analysis-ik/IKAnalyzer.cfg.xml
+#      - ./config/elasticsearch/analysis-ik/jdbc-reload.properties:/usr/share/elasticsearch/config/analysis-ik/jdbc-reload.properties
+#      - ./data/elasticsearch:/usr/share/elasticsearch/data
+#    environment:
+#      TZ: Asia/Shanghai
+#      LANG: C.UTF-8
+#  kibana:
+#    container_name: kibana
+#    hostname: kibana
+#    image: kibana:${elasticsearchVersion}
+#    #  restart: always
+#    privileged: true
+#    ports:
+#      - 5601:5601
+#    volumes:
+#      - ./config/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
+#      - ./data/kibana:/usr/share/kibana/data
+#    environment:
+#      - elasticsearch.hosts=http://elasticsearch:9200
+#      - TZ=Asia/Shanghai
+#      - LANG=C.UTF-8
+#    depends_on:
+#      - elasticsearch
   zoo1:
     image: zookeeper
     restart: always
@@ -120,27 +125,7 @@ services:
       - 2181:2181
     environment:
       ZOO_MY_ID: 1
-      ZOO_SERVERS: server.1=zoo1:2888:3888;2181 server.2=zoo2:2888:3888;2181 server.3=zoo3:2888:3888;2181
-
-  zoo2:
-    image: zookeeper
-    restart: always
-    container_name: zk2
-    ports:
-      - 2182:2181
-    environment:
-      ZOO_MY_ID: 2
-      ZOO_SERVERS: server.1=zoo1:2888:3888;2181 server.2=zoo2:2888:3888;2181 server.3=zoo3:2888:3888;2181
-
-  zoo3:
-    image: zookeeper
-    restart: always
-    container_name: zk3
-    ports:
-      - 2183:2181
-    environment:
-      ZOO_MY_ID: 3
-      ZOO_SERVERS: server.1=zoo1:2888:3888;2181 server.2=zoo2:2888:3888;2181 server.3=zoo3:2888:3888;2181
+      ZOO_SERVERS: server.1=zoo1:2888:3888;2181
 
   dubbo:
     image: apache/dubbo-admin:${dubboVersion}
@@ -148,13 +133,13 @@ services:
     ports:
       - 8081:8080
     environment:
-      - admin.registry.address=zookeeper://zoo1:2181?backup=zoo2:2181,zoo3:2181
-      - admin.config-center=zookeeper://zoo1:2181?backup=zoo2:2181,zoo3:2181
-      - admin.metadata-report.address=zookeeper://zoo1:2181?backup=zoo2:2181,zoo3:2181
+      - admin.registry.address=zookeeper://zoo1:2181
+      - admin.config-center=zookeeper://zoo1:2181
+      - admin.metadata-report.address=zookeeper://zoo1:2181
     depends_on:
       - zoo1
-      - zoo2
-      - zoo3
+#      - zoo2
+#      - zoo3
   redis:
     image: redis:${redisVersion}
     restart: always
@@ -216,19 +201,19 @@ services:
       - ./config/rocketMQ/broker1.conf:/home/rocketmq/rocketmq-4.9.4/conf/broker.conf
     command: sh mqbroker -c /home/rocketmq/rocketmq-4.9.4/conf/broker.conf
   #mongodb
-  mongodb:
-    image: mongo
-    restart: always
-#    privileged: true
-    container_name: mongodb
-    ports:
-      - 27017:27017
-    volumes:
-#      - ./data/mongodb:/data/db
-      - ./config/mongo/mongod.conf.orig:/etc/mongod.conf.orig
-    environment:
-      TZ: Asia/Shanghai
-      LANG: C.UTF-8
+#  mongodb:
+#    image: mongo
+#    restart: always
+##    privileged: true
+#    container_name: mongodb
+#    ports:
+#      - 27017:27017
+#    volumes:
+##      - ./data/mongodb:/data/db
+#      - ./config/mongo/mongod.conf.orig:/etc/mongod.conf.orig
+#    environment:
+#      TZ: Asia/Shanghai
+#      LANG: C.UTF-8
   admin:
     image: xuxueli/xxl-job-admin:2.0.2
     restart: always
