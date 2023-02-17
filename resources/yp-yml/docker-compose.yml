@@ -1,0 +1,245 @@
+version: "3"
+services:
+
+  mysql:
+    image: mysql:${mysqlVersion}
+    container_name: mysql
+    restart: on-failure
+    hostname: mysql
+    command: [
+      '--character-set-server=utf8',
+      '--collation-server=utf8_general_ci',
+      '--default-time-zone=+8:00' # 这句不是重点
+    ]
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: root
+      LANG: C.UTF-8
+    ports:
+      - 3306:3306
+    volumes:
+      - ./sql:/docker-entrypoint-initdb.d
+      - ./mysql:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+  nacos:
+    image: nacos/nacos-server:${nacosVersion}
+    container_name: nacos
+    restart: always
+    depends_on:
+      - mysql
+    env_file:
+      - ./env/nacos-standlone-mysql.env
+    volumes:
+      - ./standalone-logs/:/home/nacos/logs
+    ports:
+      - "9999:9999"
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:${prometheusVersion}
+    volumes:
+      - ./config/prometheus/prometheus-standalone.yaml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    depends_on:
+      - nacos
+    restart: on-failure
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:${grafanaVersion}
+    ports:
+      - 3000:3000
+    restart: on-failure
+  #   apploo
+  apollo:
+    image: nobodyiam/apollo-quick-start:${apolloVersion}
+    container_name: apollo
+    hostname: apollo
+    restart: always
+    privileged: true
+    env_file:
+      - ./env/apollo-mysql.env
+    volumes:
+      - ./config/apollo/demo.sh:/apollo-quick-start/demo.sh
+#      - ./logs/apollo/apollo-service.log:/apollo-quick-start/service/apollo-service.log
+#      - ./logs/apollo/apollo-portal.log:/apollo-quick-start/portal/apollo-portal.log
+    depends_on:
+      - mysql
+    ports:
+      - "8090:8090"
+      - "8080:8080"
+      - "8070:8070"
+  elasticsearch:
+    build:
+      context: "../elasticsearch"
+      dockerfile: "Dockerfile"
+    #   restart: always
+    hostname: elasticsearch
+    container_name: elasticsearch
+    privileged: true
+    ports:
+      - 9200:9200
+      - 9300:9300
+      - 9250:5000
+    volumes:
+      - ./config/elasticsearch/java.policy:/usr/share/elasticsearch/jdk/conf/security/java.policy
+      - ./config/elasticsearch/jvm.options:/usr/share/elasticsearch/config/jvm.options
+      - ./config/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+      - ./config/elasticsearch/synonym.dic:/usr/share/elasticsearch/config/synonym/synonym.dic
+      - ./config/elasticsearch/analysis-ik/IKAnalyzer.cfg.xml:/usr/share/elasticsearch/config/analysis-ik/IKAnalyzer.cfg.xml
+      - ./config/elasticsearch/analysis-ik/jdbc-reload.properties:/usr/share/elasticsearch/config/analysis-ik/jdbc-reload.properties
+      - ./data/elasticsearch:/usr/share/elasticsearch/data
+    environment:
+      TZ: Asia/Shanghai
+      LANG: C.UTF-8
+  kibana:
+    container_name: kibana
+    hostname: kibana
+    image: kibana:${elasticsearchVersion}
+    #  restart: always
+    privileged: true
+    ports:
+      - 5601:5601
+    volumes:
+      - ./config/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
+      - ./data/kibana:/usr/share/kibana/data
+    environment:
+      - elasticsearch.hosts=http://elasticsearch:9200
+      - TZ=Asia/Shanghai
+      - LANG=C.UTF-8
+    depends_on:
+      - elasticsearch
+  zoo1:
+    image: zookeeper
+    restart: always
+    container_name: zk1
+    ports:
+      - 2181:2181
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=zoo1:2888:3888;2181 server.2=zoo2:2888:3888;2181 server.3=zoo3:2888:3888;2181
+
+  zoo2:
+    image: zookeeper
+    restart: always
+    container_name: zk2
+    ports:
+      - 2182:2181
+    environment:
+      ZOO_MY_ID: 2
+      ZOO_SERVERS: server.1=zoo1:2888:3888;2181 server.2=zoo2:2888:3888;2181 server.3=zoo3:2888:3888;2181
+
+  zoo3:
+    image: zookeeper
+    restart: always
+    container_name: zk3
+    ports:
+      - 2183:2181
+    environment:
+      ZOO_MY_ID: 3
+      ZOO_SERVERS: server.1=zoo1:2888:3888;2181 server.2=zoo2:2888:3888;2181 server.3=zoo3:2888:3888;2181
+
+  dubbo:
+    image: apache/dubbo-admin:${dubboVersion}
+    container_name: dubbo
+    ports:
+      - 8081:8080
+    environment:
+      - admin.registry.address=zookeeper://zoo1:2181?backup=zoo2:2181,zoo3:2181
+      - admin.config-center=zookeeper://zoo1:2181?backup=zoo2:2181,zoo3:2181
+      - admin.metadata-report.address=zookeeper://zoo1:2181?backup=zoo2:2181,zoo3:2181
+    depends_on:
+      - zoo1
+      - zoo2
+      - zoo3
+  redis:
+    image: redis:${redisVersion}
+    restart: always
+    privileged: true
+    command: redis-server /etc/redis/redis.conf
+    container_name: redis
+    ports:
+      - 6379:6379
+    volumes:
+      - ./data/redis:/data
+      - ./config/redis/redis.conf:/etc/redis/redis.conf
+    environment:
+      TZ: Asia/Shanghai
+      LANG: C.UTF-8
+
+  #Service for nameserver
+  namesrv:
+    image: apache/rocketmq:${rocketVersion}
+    container_name: rmqnamesrv
+    ports:
+      - 9876:9876
+    volumes:
+      - ./logs/namesrv:/home/rocketmq/logs
+    command: sh mqnamesrv
+
+  #Service for broker
+  broker:
+    image: apache/rocketmq:${rocketVersion}
+    container_name: broker
+    depends_on:
+      - namesrv
+    ports:
+      - 10909:10909
+      - 10911:10911
+      - 10912:10912
+    environment:
+      - NAMESRV_ADDR=namesrv:9876
+    volumes:
+      - ./data/broker/logs:/home/rocketmq/logs
+      - ./data/broker/store:/home/rocketmq/store
+      - ./config/rocketMQ/broker.conf:/home/rocketmq/rocketmq-4.9.4/conf/broker.conf
+    command: sh mqbroker -c /home/rocketmq/rocketmq-4.9.4/conf/broker.conf
+
+  #Service for another broker -- broker1
+  broker1:
+    image: apache/rocketmq:${rocketVersion}
+    container_name: broker1
+    depends_on:
+      - namesrv
+    ports:
+      - 10929:10909
+      - 10931:10911
+      - 10932:10912
+    environment:
+      - NAMESRV_ADDR=namesrv:9876
+    volumes:
+      - ./data1/broker/logs:/home/rocketmq/logs
+      - ./data1/broker/store:/home/rocketmq/store
+      - ./config/rocketMQ/broker1.conf:/home/rocketmq/rocketmq-4.9.4/conf/broker.conf
+    command: sh mqbroker -c /home/rocketmq/rocketmq-4.9.4/conf/broker.conf
+  #mongodb
+  mongodb:
+    image: mongo
+    restart: always
+#    privileged: true
+    container_name: mongodb
+    ports:
+      - 27017:27017
+    volumes:
+#      - ./data/mongodb:/data/db
+      - ./config/mongo/mongod.conf.orig:/etc/mongod.conf.orig
+    environment:
+      TZ: Asia/Shanghai
+      LANG: C.UTF-8
+  admin:
+    image: xuxueli/xxl-job-admin:2.0.2
+    restart: always
+    hostname: admin
+    container_name: xxl_job
+    ports:
+      - 28888:8080
+    links:
+      - mysql
+    environment:
+      - spring.datasource.url=jdbc:mysql://mysql:3306/xxl-job?Unicode=true&characterEncoding=UTF-8&autoReconnect=true
+      - spring.datasource.password=root
+    depends_on:
+      - mysql

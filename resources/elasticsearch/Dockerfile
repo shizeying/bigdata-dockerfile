@@ -1,11 +1,11 @@
 ##修改你需要的版本即可
-FROM docker.elastic.co/elasticsearch/elasticsearch:${version}  as builder
+FROM docker.elastic.co/elasticsearch/elasticsearch:7.16.0  as builder
 MAINTAINER w741069229@163.com
 
 LABEL author="史泽颖"
 LABEL version=${version}
 
-ENV version=7.13.0
+ENV version=7.16.0
 
 ENV knn_version=${version}.0
 
@@ -27,5 +27,5 @@ USER elasticsearch
 
 
 EXPOSE 9300 9200
-FROM docker.elastic.co/elasticsearch/elasticsearch:${version}
+FROM docker.elastic.co/elasticsearch/elasticsearch:7.16.0
 COPY --from=0 /usr/share/elasticsearch/ /usr/share/elasticsearch/

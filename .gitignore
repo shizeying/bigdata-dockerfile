@@ -7,3 +7,4 @@ resources/log-stream/data
 */*/*.log.*
 */*/*.out*
 */logs/*
+*/*/*/*.log
