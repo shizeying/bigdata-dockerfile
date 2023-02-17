@@ -20,7 +20,7 @@ setup.dashboards.enabled: false
 setup.kibana:
   host: "http://kibana:5601"
 
- 不直接传输至ES
+# 不直接传输至ES
 output.elasticsearch:
  hosts: ["http://elasticsearch:9200"]
  index: "filebeat-%{[beat.version]}-%{+yyyy.MM.dd}"
