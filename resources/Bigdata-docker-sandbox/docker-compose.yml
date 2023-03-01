@@ -1,0 +1,209 @@
+version: '3' 
+services:
+
+  namenode:
+    image: fjardim/namenode_sqoop
+    container_name: namenode
+    hostname: namenode
+    volumes:
+      - ./base/hdfs/namenode:/hadoop/dfs/name
+    environment:
+      - CLUSTER_NAME=test
+    env_file:
+      - ./base/hadoop/hadoop-hive.env
+    ports:
+      - "50070:50070"
+    deploy:
+      resources:
+        limits:
+          memory: 500m
+    networks:
+      net_pet:
+        ipv4_address: 172.27.1.5
+
+  datanode1:
+    image: fjardim/datanode
+    container_name: datanode1
+    hostname: datanode1
+    volumes:
+      - ./base/hdfs/datanode1:/hadoop/dfs/data
+    env_file:
+      - ./base/hadoop/hadoop-hive.env
+    environment:
+      SERVICE_PRECONDITION: "namenode:50070"
+    depends_on:
+      - namenode
+    ports:
+      - "50075:50075"
+    deploy:
+      resources:
+        limits:
+          memory: 500m
+    networks:
+      net_pet:
+        ipv4_address: 172.27.1.6
+
+  datanode2:
+    image: fjardim/datanode
+    container_name: datanode2
+    hostname: datanode2
+    volumes:
+      - ./base/hdfs/datanode2:/hadoop/dfs/data
+    env_file:
+      - ./base/hadoop/hadoop-hive.env
+    environment:
+      SERVICE_PRECONDITION: "namenode:50070"
+    depends_on:
+      - namenode
+    ports:
+      - "50080:50075"
+    deploy:
+      resources:
+        limits:
+          memory: 500m
+    networks:
+      net_pet:
+        ipv4_address: 172.27.1.7
+
+  datanode3:
+    image: fjardim/datanode
+    container_name: datanode3
+    hostname: datanode3
+    volumes:
+      - ./base/hdfs/datanode3:/hadoop/dfs/data
+    env_file:
+      - ./base/hadoop/hadoop-hive.env
+    environment:
+      SERVICE_PRECONDITION: "namenode:50070"
+    depends_on:
+      - namenode
+    ports:
+      - "50085:50075"
+    deploy:
+      resources:
+        limits:
+          memory: 500m
+    networks:
+      net_pet:
+        ipv4_address: 172.27.1.8
+  
+  hive-server:
+    image: fjardim/hive
+    container_name: hive-server
+    hostname: hive_server
+    env_file:
+      - ./base/hadoop/hadoop-hive.env
+    environment:
+      HIVE_CORE_CONF_javax_jdo_option_ConnectionURL: "jdbc:postgresql://hive-metastore/metastore"
+      SERVICE_PRECONDITION: "hive-metastore:9083"
+    ports:
+      - "10000:10000"
+    depends_on:
+      - hive-metastore
+    deploy:
+      resources:
+        limits:
+          memory: 500m
+    networks:
+      net_pet:
+        ipv4_address: 172.27.1.9
+  
+  hive-metastore:
+    image: fjardim/hive
+    container_name: hive_metastore
+    hostname: hive_metastore
+    env_file:
+      - ./base/hadoop/hadoop-hive.env
+    command: /opt/hive/bin/hive --service metastore
+    environment:
+      SERVICE_PRECONDITION: "namenode:50070 datanode1:50075 hive-metastore-postgresql:5432"
+    ports:
+      - "9083:9083"
+    depends_on:
+      - hive-metastore-postgresql
+    deploy:
+      resources:
+        limits:
+          memory: 500m
+    networks:
+      net_pet:
+        ipv4_address: 172.27.1.10
+  
+  hive-metastore-postgresql:
+    image: fjardim/hive-metastore
+    container_name: hive-metastore-postgresql
+    hostname: hive_metastore_postgresql
+    volumes:
+      - ./base/postgresql:/var/lib/postgresql/data
+    depends_on:
+      - datanode1
+      - datanode2
+      - datanode3
+    deploy:
+      resources:
+        limits:
+          memory: 500m
+    networks:
+      net_pet:
+        ipv4_address: 172.27.1.11
+
+  hue:
+    image: fjardim/hue
+    hostname: hue
+    container_name: hue
+    dns: 8.8.8.8
+    ports:
+    - "8888:8888"
+    volumes:
+      - ./base/hue/hue-overrides.ini:/usr/share/hue/desktop/conf/z-hue.ini
+    depends_on:
+      - "database"
+    deploy:
+      resources:
+        limits:
+          memory: 500m
+    networks:
+      net_pet:
+        ipv4_address: 172.27.1.12
+  
+  database:
+    image: fjardim/mysql
+    container_name: database
+    hostname: database
+    ports:
+        - "33061:3306"
+    deploy:
+      resources:
+        limits:
+          memory: 500m
+    command: mysqld --innodb-flush-method=O_DSYNC --innodb-use-native-aio=OFF --init-file /data/application/init.sql
+    volumes:
+        - ./base/mysql/data:/var/lib/mysql
+        - ./base/mysql/init.sql:/data/application/init.sql
+    environment:
+        MYSQL_ROOT_USER: root
+        MYSQL_ROOT_PASSWORD: secret
+        MYSQL_DATABASE: hue
+        MYSQL_USER: root
+        MYSQL_PASSWORD: secret
+    networks:
+      net_pet:
+        ipv4_address: 172.27.1.13
+
+
+
+
+
+
+
+
+
+
+
+
+networks:
+  net_pet:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.27.0.0/16
