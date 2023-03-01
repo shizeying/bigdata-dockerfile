@@ -6,7 +6,7 @@ services:
     image: nobodyiam/apollo-quick-start:2.0.0
     container_name: apollo
     hostname: apollo
-    restart: always
+#    restart: always
     privileged: true
     environment:
       - EUREKA_INSTANCE_IP_ADDRESS=0.0.0.0

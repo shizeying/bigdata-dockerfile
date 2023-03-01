@@ -16,7 +16,7 @@ services:
       MYSQL_ROOT_PASSWORD: root
       LANG: C.UTF-8
     ports:
-      - 13306:3306
+      - 3306:3306
     volumes:
       - ./sql:/docker-entrypoint-initdb.d
       - ./mysql:/var/lib/mysql
@@ -63,20 +63,20 @@ services:
     image: nobodyiam/apollo-quick-start:${apolloVersion}
     container_name: apollo
     hostname: apollo
-    restart: always
+#    restart: always
     privileged: true
     env_file:
       - ./env/apollo-mysql.env
     volumes:
       - ./config/apollo/demo.sh:/apollo-quick-start/demo.sh
-#      - ./logs/apollo/apollo-service.log:/apollo-quick-start/service/apollo-service.log
-#      - ./logs/apollo/apollo-portal.log:/apollo-quick-start/portal/apollo-portal.log
+      - ./logs/apollo/apollo-service.log:/apollo-quick-start/service/apollo-service.log
+      - ./logs/apollo/apollo-portal.log:/apollo-quick-start/portal/apollo-portal.log
     depends_on:
       - mysql
     ports:
-      - "18090:8090"
-      - "18080:8080"
-      - "18070:8070"
+      - "8090:8090"
+      - "8080:8080"
+      - "8070:8070"
 #  elasticsearch:
 #    build:
 #      context: "../elasticsearch"
